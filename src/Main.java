@@ -33,10 +33,11 @@ public class Main extends Application {
     public static void main(String[] args) { launch(args); }
     @Override public void start(Stage stage) throws Exception {
         final Circle circle = createCircle();
-        final Group group = new Group(createInstructions(), circle);
+        final Circle arena = createArena();
+        final Group group = new Group(createInstructions(), arena, circle);
         final TranslateTransition transition = createTranslateTransition(circle);
 
-        final Scene scene = new Scene(group, 600, 400, Color.CORNSILK);
+        final Scene scene = new Scene(group, 800, 600, Color.YELLOWGREEN);
         moveCircleOnKeyPress(scene, circle);
         moveCircleOnMousePress(scene, circle, transition);
 
@@ -70,6 +71,12 @@ public class Main extends Application {
         final Circle circle = new Circle(200, 150, 50, Color.BLUEVIOLET);
         circle.setOpacity(0.7);
         return circle;
+    }
+
+    private Circle createArena() {
+        final Circle arena = new Circle(250, 300, 200, Color.BLUE);
+        arena.setOpacity(0.7);
+        return arena;
     }
 
     private TranslateTransition createTranslateTransition(final Circle circle) {
