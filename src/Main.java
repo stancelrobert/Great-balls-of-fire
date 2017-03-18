@@ -29,7 +29,6 @@ public class Main extends Application {
 
     Runnable task;
     Thread thread;
-    int test;
 
     public static void main(String[] args) { launch(args); }
     @Override public void start(Stage stage) throws Exception {
@@ -86,7 +85,7 @@ public class Main extends Application {
         return transition;
     }
 
-    void dlugoTrwaleObliczenia(Circle circle) {
+    synchronized void dlugoTrwaleObliczenia(Circle circle) {
         while (!Thread.interrupted()) {
             if (upAndLeftPressed.get()) {
                 circle.setCenterX(circle.getCenterX() - KEYBOARD_MOVEMENT_DELTA);
