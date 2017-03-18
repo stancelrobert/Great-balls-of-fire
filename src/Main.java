@@ -92,7 +92,7 @@ public class Main extends Application {
         return transition;
     }
 
-    void dlugoTrwaleObliczenia(Circle circle) {
+    synchronized void dlugoTrwaleObliczenia(Circle circle) {
         while (!Thread.interrupted()) {
             if (upAndLeftPressed.get()) {
                 circle.setCenterX(circle.getCenterX() - KEYBOARD_MOVEMENT_DELTA);
