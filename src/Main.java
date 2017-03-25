@@ -79,6 +79,16 @@ public class Main extends Application {
         return arena;
     }
 
+    private boolean ifCollision(Circle c1, Circle c2) {
+        double xDiff = (c1.getCenterX() - c2.getCenterX());
+        double yDiff = (c1.getCenterY() - c2.getCenterY());
+        double distance = (c1.getRadius() + c2.getRadius());
+
+        if(xDiff * xDiff + yDiff * yDiff == distance * distance){
+            return true;
+        }
+    }
+
     private TranslateTransition createTranslateTransition(final Circle circle) {
         final TranslateTransition transition = new TranslateTransition(TRANSLATE_DURATION, circle);
         transition.setOnFinished(new EventHandler<ActionEvent>() {
