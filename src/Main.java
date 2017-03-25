@@ -17,6 +17,8 @@ import javafx.util.Duration;
 public class Main extends Application {
     private static final int      KEYBOARD_MOVEMENT_DELTA = 1;
     private static final Duration TRANSLATE_DURATION      = Duration.seconds(0.25);
+    private static final double   ACCELERATION            = 2.0;
+    private static final double   ROTATION_SPLIT          = 90.0;
     final BooleanProperty upPressed = new SimpleBooleanProperty(false);
     final BooleanProperty downPressed = new SimpleBooleanProperty(false);
     final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
@@ -33,8 +35,9 @@ public class Main extends Application {
     public static void main(String[] args) { launch(args); }
     @Override public void start(Stage stage) throws Exception {
         final Circle circle = createCircle();
+        final Circle circle2 = createCircle2();
         final Circle arena = createArena();
-        final Group group = new Group(createInstructions(), arena, circle);
+        final Group group = new Group(createInstructions(), arena, circle, circle2);
         final TranslateTransition transition = createTranslateTransition(circle);
 
         final Scene scene = new Scene(group, 800, 600, Color.YELLOWGREEN);
@@ -42,7 +45,7 @@ public class Main extends Application {
         moveCircleOnMousePress(scene, circle, transition);
 
         task = () ->
-            dlugoTrwaleObliczenia(circle);
+            dlugoTrwaleObliczenia(circle, circle2);
 
 
         thread = new Thread(task);
@@ -73,6 +76,12 @@ public class Main extends Application {
         return circle;
     }
 
+    private Circle createCircle2() {
+        final Circle circle = new Circle(400, 300, 50, Color.GREEN);
+        circle.setOpacity(0.7);
+        return circle;
+    }
+
     private Circle createArena() {
         final Circle arena = new Circle(250, 300, 200, Color.BLUE);
         arena.setOpacity(0.7);
@@ -82,12 +91,20 @@ public class Main extends Application {
     private boolean ifCollision(Circle c1, Circle c2) {
         double xDiff = (c1.getCenterX() - c2.getCenterX());
         double yDiff = (c1.getCenterY() - c2.getCenterY());
-        double distance = (c1.getRadius() + c2.getRadius());
+        double sumOfradius = (c1.getRadius() + c2.getRadius());
 
-        if(xDiff * xDiff + yDiff * yDiff == distance * distance){
+        if(Math.abs((xDiff * xDiff + yDiff * yDiff) - sumOfradius * sumOfradius) <= 100) {
             return true;
         }
+        else {
+            return false;
+        }
     }
+
+    private void collisionAction(Circle c1, Circle c2) {
+
+    }
+
 
     private TranslateTransition createTranslateTransition(final Circle circle) {
         final TranslateTransition transition = new TranslateTransition(TRANSLATE_DURATION, circle);
@@ -102,9 +119,9 @@ public class Main extends Application {
         return transition;
     }
 
-    synchronized void dlugoTrwaleObliczenia(Circle circle) {
+    synchronized void dlugoTrwaleObliczenia(Circle circle, Circle circle2) {
         while (!Thread.interrupted()) {
-            if (upAndLeftPressed.get()) {
+            /*if (upAndLeftPressed.get()) {
                 circle.setCenterX(circle.getCenterX() - KEYBOARD_MOVEMENT_DELTA);
                 circle.setCenterY(circle.getCenterY() - KEYBOARD_MOVEMENT_DELTA);
             }
@@ -131,6 +148,23 @@ public class Main extends Application {
             }
             else if (downPressed.get()) {
                 circle.setCenterY(circle.getCenterY() + KEYBOARD_MOVEMENT_DELTA);
+            }*/
+            if (upPressed.get()) {
+                circle.setCenterY(circle.getCenterY() - KEYBOARD_MOVEMENT_DELTA);
+            }
+            else if (rightPressed.get()) {
+                for(int i = 0; i < )
+            }
+            else if (leftPressed.get()) {
+
+            }
+            else if (downPressed.get()) {
+
+            }
+
+            if(ifCollision(circle, circle2)){
+                System.out.println("kolizja");
+                collisionAction(circle, circle2);
             }
 
             try {
