@@ -1,6 +1,5 @@
 package controllers;
 
-import business.Player;
 import javafx.event.ActionEvent;
 
 public class MenuController {

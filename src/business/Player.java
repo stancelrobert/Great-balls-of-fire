@@ -1,27 +1,60 @@
 package business;
 
-import javafx.beans.binding.BooleanBinding;
+import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
-import javafx.event.EventHandler;
+import javafx.concurrent.Task;
 import javafx.scene.Scene;
-import javafx.scene.input.KeyEvent;
+import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-public class Player {
+public class Player extends Task<Point> {
     private static final double RADIUS = 25.0;
+    private static final double ACCELERATION = 400.0;
+    private static final double ROTATION_SPEED = 180.0;
+    private static final double PASSIVE_ACCELERATION = 200.0;
+    private static final double FPS = 57.0;
 
     private Circle circle = new Circle();
 
+    private Line directionLine = new Line();
+
+    private Point coords = new Point();
+
+    double speed = 0.0;
+    double rotation = 0.0;
+
+    private ExecutorService executor = Executors.newSingleThreadExecutor();
+
     public Player(double x, double y) {
-        this.circle.setCenterX(x);
-        this.circle.setCenterY(y);
-        this.circle.setRadius(RADIUS);
+        Platform.runLater(() -> {
+            circle.setRadius(RADIUS);
+            circle.setFill(Color.web("#FF0000"));
+        });
+        move(x, y);
     }
 
-    private static final double ACCELERATION = 50.0;
-    private static final double ROTATION_SPEED = 90.0;
+    private void move(double x, double y) {
+        coords.setLocation(coords.getX()+x, coords.getY()+y);
+        updateValue(this.coords);
+
+        /*
+            directionLines' properties don't need to be bind as circles' ones, because
+            theirs changes per time unit are much lower
+         */
+        Platform.runLater(() -> {
+            directionLine.setStartX(circle.getCenterX());
+            directionLine.setStartY(circle.getCenterY());
+
+            directionLine.setEndX(circle.getCenterX()+circle.getRadius()*Math.cos(rotation*Math.PI/180.0));
+            directionLine.setEndY(circle.getCenterY()+circle.getRadius()*Math.sin(rotation*Math.PI/180.0));
+        });
+    }
+
 
     private static final double      KEYBOARD_MOVEMENT_DELTA = 1.0;
     final BooleanProperty upPressed = new SimpleBooleanProperty(false);
@@ -29,29 +62,20 @@ public class Player {
     final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
     final BooleanProperty leftPressed = new SimpleBooleanProperty(false);
 
-    final BooleanBinding upAndRightPressed = upPressed.and(rightPressed);
-    final BooleanBinding downAndRightPressed = downPressed.and(rightPressed);
-    final BooleanBinding upAndLeftPressed = upPressed.and(leftPressed);
-    final BooleanBinding downAndLeftPressed = downPressed.and(leftPressed);
-
-    long lastTime = -1;
-    long currTime;
-    double speed = 0.0;
-    double rotation = 0.0;
-
-    private Thread movementThread;
-
-    synchronized void dlugoTrwaleObliczenia() {
+    void dlugoTrwaleObliczenia() {
+        long lastTime = -1;
+        long currTime;
         double delta_t;
         double rotationInRadians;
+        double currTime2;
+        long millis;
+        int nanos;
         while (!Thread.interrupted()) {
             currTime = System.nanoTime();
-
             if (lastTime != -1) {
-                /**
-                 * Ustawienie prędkości i obrotu
+                /*
+                    set speed and rotation
                  */
-
                 delta_t = (double)(currTime - lastTime)/(1000000000.0);
 
                 if (upPressed.get()) {
@@ -59,6 +83,9 @@ public class Player {
                 }
                 else if (downPressed.get()) {
                     speed -= ACCELERATION * delta_t;
+                }
+                else if (speed != 0) {
+                    speed -= Math.signum(speed) * PASSIVE_ACCELERATION * delta_t;
                 }
 
                 if (leftPressed.get()) {
@@ -68,63 +95,27 @@ public class Player {
                     rotation += (ROTATION_SPEED * delta_t)%360;
                 }
 
-                rotationInRadians=rotation*Math.PI/180.0;
-                /**
-                 * Poruszanie na planszy
+                /*
+                    perform movement
                  */
-                circle.setCenterX(circle.getCenterX() + Math.cos(rotationInRadians) * speed * delta_t);
-                circle.setCenterY(circle.getCenterY() + Math.sin(rotationInRadians) * speed * delta_t);
+                rotationInRadians=rotation*Math.PI/180.0;
+                move(Math.cos(rotationInRadians) * speed * delta_t,
+                        Math.sin(rotationInRadians) * speed * delta_t);
+            }
 
-
-                try {
-                    Thread.sleep(10);
-                } catch (InterruptedException e){
-                    break;
-                }
+            /*
+                refresh rate
+             */
+            currTime2 = System.nanoTime();
+            millis = (long)(1000.0/FPS-(currTime2-currTime)/1000000);
+            nanos = (int)(((1000.0/FPS-(currTime2-currTime)/1000000.0)-((double)millis))*1000000.0);
+            try {
+                Thread.sleep(millis, nanos);
+            } catch (InterruptedException e){
+                break;
             }
 
             lastTime = currTime;
-
-
-
-//            if (upAndLeftPressed.get()) {
-//                circle.setCenterX(circle.getCenterX() - KEYBOARD_MOVEMENT_DELTA);
-//                circle.setCenterY(circle.getCenterY() - KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (upAndRightPressed.get()) {
-//                circle.setCenterX(circle.getCenterX() + KEYBOARD_MOVEMENT_DELTA);
-//                circle.setCenterY(circle.getCenterY() - KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (downAndLeftPressed.get()) {
-//                circle.setCenterX(circle.getCenterX() - KEYBOARD_MOVEMENT_DELTA);
-//                circle.setCenterY(circle.getCenterY() + KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (downAndRightPressed.get()) {
-//                circle.setCenterX(circle.getCenterX() + KEYBOARD_MOVEMENT_DELTA);
-//                circle.setCenterY(circle.getCenterY() + KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (upPressed.get()) {
-//                circle.setCenterY(circle.getCenterY() - KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (rightPressed.get()) {
-//                circle.setCenterX(circle.getCenterX() + KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (leftPressed.get()) {
-//                circle.setCenterX(circle.getCenterX() - KEYBOARD_MOVEMENT_DELTA);
-//            }
-//            else if (downPressed.get()) {
-//                circle.setCenterY(circle.getCenterY() + KEYBOARD_MOVEMENT_DELTA);
-//            }
-
-
-
-
-
-//            try {
-//                Thread.sleep(1);
-//            } catch (InterruptedException e){
-//                break;
-//            }
         }
     }
 
@@ -151,15 +142,25 @@ public class Player {
 
     public void runMovementThread(Scene scene) {
         moveCircleOnKeyPress(scene);
-        Runnable task = this::dlugoTrwaleObliczenia;
-        movementThread = new Thread(task);
-        movementThread.start();
+
+        circle.centerXProperty().bind(this.valueProperty().getValue().getXProperty());
+        circle.centerYProperty().bind(this.valueProperty().getValue().getYProperty());
+
+        executor.submit(this);
     }
 
     public Circle getCircle() {
         return circle;
     }
 
+    public Line getDirectionLine() {
+        return directionLine;
+    }
 
 
+    @Override
+    protected Point call() throws Exception {
+        dlugoTrwaleObliczenia();
+        return this.coords;
+    }
 }

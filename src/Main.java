@@ -16,5 +16,4 @@ public class Main extends Application {
         primaryStage.show();
         mainController.setStage(primaryStage);
     }
-
 }
