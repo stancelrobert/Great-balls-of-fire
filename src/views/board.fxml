@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.layout.*?>
+
+<?import javafx.scene.shape.Circle?>
+<AnchorPane xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="controllers.BoardController"
+            prefHeight="620.0" prefWidth="585.0"
+            fx:id="boardPane">
+
+    <Circle centerX="293" centerY="310" radius="270" fill="black" fx:id="outsideBoardCircle"/>
+    <Circle centerX="293" centerY="310" radius="260" fill="white" fx:id="insideBoardCircle"/>
+
+</AnchorPane>
