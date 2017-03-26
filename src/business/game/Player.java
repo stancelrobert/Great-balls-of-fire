@@ -1,5 +1,6 @@
-package business;
+package business.game;
 
+import controllers.BoardController;
 import javafx.application.Platform;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.SimpleBooleanProperty;
@@ -13,24 +14,34 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class Player extends Task<Point> {
-    private static final double RADIUS = 25.0;
+    public static final double RADIUS = 25.0;
     private static final double ACCELERATION = 400.0;
-    private static final double ROTATION_SPEED = 180.0;
+    private static final double MAX_SPEED = 450.0;
+    private static final double ROTATION_SPEED = 360.0;
     private static final double PASSIVE_ACCELERATION = 200.0;
     private static final double FPS = 57.0;
 
+    final BooleanProperty upPressed = new SimpleBooleanProperty(false);
+    final BooleanProperty downPressed = new SimpleBooleanProperty(false);
+    final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
+    final BooleanProperty leftPressed = new SimpleBooleanProperty(false);
+
     private Circle circle = new Circle();
-
     private Line directionLine = new Line();
-
     private Point coords = new Point();
+    private BoardController boardController;
+    private double boardSizeX;
+    private double boardSizeY;
 
     double speed = 0.0;
     double rotation = 0.0;
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
-    public Player(double x, double y) {
+    public Player(BoardController boardController, double x, double y) {
+        this.boardController = boardController;
+        this.boardSizeX = boardController.getBoardPane().getWidth();
+        this.boardSizeY = boardController.getBoardPane().getHeight();
         Platform.runLater(() -> {
             circle.setRadius(RADIUS);
             circle.setFill(Color.web("#FF0000"));
@@ -38,29 +49,19 @@ public class Player extends Task<Point> {
         move(x, y);
     }
 
-    private void move(double x, double y) {
-        coords.setLocation(coords.getX()+x, coords.getY()+y);
-        updateValue(this.coords);
-
-        /*
-            directionLines' properties don't need to be bind as circles' ones, because
-            theirs changes per time unit are much lower
-         */
-        Platform.runLater(() -> {
-            directionLine.setStartX(circle.getCenterX());
-            directionLine.setStartY(circle.getCenterY());
-
-            directionLine.setEndX(circle.getCenterX()+circle.getRadius()*Math.cos(rotation*Math.PI/180.0));
-            directionLine.setEndY(circle.getCenterY()+circle.getRadius()*Math.sin(rotation*Math.PI/180.0));
-        });
+    private boolean correctCoords(double x, double y) {
+        return (x > RADIUS && y > RADIUS && x < boardSizeX-RADIUS && y < boardSizeY-RADIUS);
     }
 
-
-    private static final double      KEYBOARD_MOVEMENT_DELTA = 1.0;
-    final BooleanProperty upPressed = new SimpleBooleanProperty(false);
-    final BooleanProperty downPressed = new SimpleBooleanProperty(false);
-    final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
-    final BooleanProperty leftPressed = new SimpleBooleanProperty(false);
+    private void move(double x, double y) {
+        if (correctCoords(x, y)) {
+            coords.setLocation(x, y);
+            updateValue(this.coords);
+        }
+        else {
+            speed = 0.0;
+        }
+    }
 
     void dlugoTrwaleObliczenia() {
         long lastTime = -1;
@@ -78,10 +79,10 @@ public class Player extends Task<Point> {
                  */
                 delta_t = (double)(currTime - lastTime)/(1000000000.0);
 
-                if (upPressed.get()) {
+                if (upPressed.get() && speed < MAX_SPEED) {
                     speed += ACCELERATION * delta_t;
                 }
-                else if (downPressed.get()) {
+                else if (downPressed.get() && speed > -MAX_SPEED) {
                     speed -= ACCELERATION * delta_t;
                 }
                 else if (speed != 0) {
@@ -96,11 +97,23 @@ public class Player extends Task<Point> {
                 }
 
                 /*
+                    directionLines' properties don't need to be bind as circles' ones, because
+                    theirs changes per time unit are much lower
+                 */
+                Platform.runLater(() -> {
+                    directionLine.setStartX(circle.getCenterX());
+                    directionLine.setStartY(circle.getCenterY());
+
+                    directionLine.setEndX(circle.getCenterX()+circle.getRadius()*Math.cos(rotation*Math.PI/180.0));
+                    directionLine.setEndY(circle.getCenterY()+circle.getRadius()*Math.sin(rotation*Math.PI/180.0));
+                });
+
+                /*
                     perform movement
                  */
                 rotationInRadians=rotation*Math.PI/180.0;
-                move(Math.cos(rotationInRadians) * speed * delta_t,
-                        Math.sin(rotationInRadians) * speed * delta_t);
+                move(coords.getX()+Math.cos(rotationInRadians) * speed * delta_t,
+                        coords.getY()+Math.sin(rotationInRadians) * speed * delta_t);
             }
 
             /*
@@ -157,10 +170,22 @@ public class Player extends Task<Point> {
         return directionLine;
     }
 
-
     @Override
     protected Point call() throws Exception {
         dlugoTrwaleObliczenia();
         return this.coords;
     }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public void setRotation(double rotation) {
+        this.rotation = rotation;
+    }
+
+    public Point getCoords() {
+        return coords;
+    }
+
 }
