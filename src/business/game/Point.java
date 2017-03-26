@@ -1,4 +1,4 @@
-package business;
+package business.game;
 
 import javafx.beans.property.DoubleProperty;
 import javafx.beans.property.SimpleDoubleProperty;
