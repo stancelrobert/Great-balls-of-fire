@@ -1,5 +1,8 @@
 package controllers;
 
+import business.client.Client;
+import business.game.Player;
+import business.server.Server;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.stage.Stage;
@@ -14,6 +17,9 @@ public class MainController implements Initializable {
 
     private Stage stage;
 
+    private Server server;
+    private Client client;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         menuController.setBoardController(boardController);
@@ -22,8 +28,18 @@ public class MainController implements Initializable {
         boardController.setMainController(this);
     }
 
+    /**
+     * initializes new server and adds local player to service
+     */
     public void initServer() {
         //TODO postawić serwer
+        try {
+            server = new Server();
+            server.run();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
 
         boardController.addPlayer();
     }
@@ -36,4 +52,12 @@ public class MainController implements Initializable {
         return stage;
     }
 
+    public void initClient() {
+        try {
+            client = new Client();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }

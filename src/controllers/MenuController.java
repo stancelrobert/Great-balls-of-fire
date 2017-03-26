@@ -17,4 +17,8 @@ public class MenuController {
     public void newGameButtonClicked(ActionEvent actionEvent) {
         mainController.initServer();
     }
+
+    public void joinGameButtonClicked(ActionEvent actionEvent) {
+        mainController.initClient();
+    }
 }
