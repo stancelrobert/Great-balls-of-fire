@@ -1,25 +1,54 @@
 package business.server;
 
-import java.net.SocketException;
+import com.sun.deploy.util.SessionState;
+
+import java.io.IOException;
+import java.io.Serializable;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
-import static java.util.concurrent.Executors.*;
+/**
+ * Created by Robert on 03.04.2017.
+ */
+public class Server <T extends Serializable> {
+    private final int maxClients;
+    private final ServerSocket serverSocket;
+    private List<ClientHandler> clientHandlers;
+    private ExecutorService executor;
 
-public class Server {
-    private static final int MAX_PLAYERS_NUMBER = 3;
-    private static final int[] PORTS = {6000, 6001, 6002};
-    private ExecutorService executor = newFixedThreadPool(MAX_PLAYERS_NUMBER);
-    private ArrayList<PlayerHandler> playerHandlers = new ArrayList<>(MAX_PLAYERS_NUMBER);
+    public Server(int port, int maxClients) throws IOException {
+        this.maxClients = maxClients;
+        this.clientHandlers = new ArrayList<>(maxClients);
+        this.executor = Executors.newFixedThreadPool(maxClients);
+        this.serverSocket = new ServerSocket(port);
+    }
 
-    public Server() throws SocketException {}
+    public void start() {
+        printMessage("Server started.");
+        while(true) {
+            try {
+                printMessage("Waiting for client.");
+                Socket client = serverSocket.accept();
 
-    public void run() throws SocketException {
-        PlayerHandler currPlayerHandler;
-        for (int port : PORTS) {
-            currPlayerHandler = new PlayerHandler(port);
-            playerHandlers.add(currPlayerHandler);
-            executor.submit(currPlayerHandler);
+                printMessage("Client connected.");
+                if(client != null) {
+                    ClientHandler ch = new ClientHandler(client);
+                    clientHandlers.add(ch);
+                    executor.submit(ch);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         }
     }
+
+    private void printMessage(String message) {
+
+    }
+
+
 }
