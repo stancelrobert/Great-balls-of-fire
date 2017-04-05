@@ -1,6 +1,7 @@
 package controllers;
 
 import business.client.Client;
+import business.game.Game;
 import business.game.Player;
 import business.server.Server;
 import javafx.fxml.FXML;
@@ -32,16 +33,25 @@ public class MainController implements Initializable {
      * initializes new server and adds local player to service
      */
     public void initServer() {
+        boardController.addPlayer(new Player());
         //TODO postawić serwer
-        try {
-            server = new Server();
-            server.run();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            server = new Server();
+//            server.run();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+//
+//        try {
+//            System.out.println(boardController.getPlayer());
+//            client = new Client(boardController.getPlayer(), Server.PORTS[0]);
+//            client.run();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
-        boardController.addPlayer();
     }
 
     public void setStage(Stage stage) {
@@ -53,11 +63,21 @@ public class MainController implements Initializable {
     }
 
     public void initClient() {
-        try {
-            client = new Client();
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+//        boardController.addPlayer(new Player(boardController, 200, 300));
+//        try {
+//            client = new Client(boardController.getPlayer(), Server.PORTS[0]);
+//            client.run();
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+    }
+
+    public void initNewGame() {
+        Player player = new Player();
+        Game game = new Game(Game.InstanceType.HOST);
+        game.addPlayer(player);
+        boardController.addPlayer(player);
     }
 }
