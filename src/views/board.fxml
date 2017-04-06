@@ -9,7 +9,7 @@
             prefHeight="620.0" prefWidth="585.0"
             fx:id="boardPane">
 
-    <Circle centerX="293" centerY="310" radius="270" fill="black" fx:id="outsideBoardCircle"/>
-    <Circle centerX="293" centerY="310" radius="260" fill="white" fx:id="insideBoardCircle"/>
+    <Circle centerX="293" centerY="310" radius="230" fill="black" fx:id="outsideBoardCircle"/>
+    <Circle centerX="293" centerY="310" radius="220" fill="white" fx:id="insideBoardCircle"/>
 
 </AnchorPane>

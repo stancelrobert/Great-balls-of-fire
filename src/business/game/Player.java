@@ -1,0 +1,34 @@
+package business.game;
+
+
+import java.io.Serializable;
+
+public class Player implements Serializable {
+    private Point coords = new Point();
+    private double rotation = 0.0;
+    private double speed = 0.0;
+
+    public Point getCoords() {
+        return coords;
+    }
+
+    public void setCoords(double x, double y) {
+        this.coords.setLocation(x, y);
+    }
+
+    public double getRotation() {
+        return rotation;
+    }
+
+    public void setRotation(double rotation) {
+        this.rotation = rotation;
+    }
+
+    public double getSpeed() {
+        return speed;
+    }
+
+    public void setSpeed(double speed) {
+        this.speed = speed;
+    }
+}

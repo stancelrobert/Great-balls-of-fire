@@ -1,6 +1,5 @@
 package controllers;
 
-import business.Player;
 import javafx.event.ActionEvent;
 
 public class MenuController {
@@ -16,6 +15,10 @@ public class MenuController {
     }
 
     public void newGameButtonClicked(ActionEvent actionEvent) {
-        mainController.initServer();
+        mainController.initNewGame();
+    }
+
+    public void joinGameButtonClicked(ActionEvent actionEvent) {
+        mainController.initClient();
     }
 }
