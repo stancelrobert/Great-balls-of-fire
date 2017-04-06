@@ -76,8 +76,8 @@ public class MainController implements Initializable {
 
     public void initNewGame() {
         Player player = new Player();
+        boardController.addPlayer(player);
         Game game = new Game(Game.InstanceType.HOST);
         game.addPlayer(player);
-        boardController.addPlayer(player);
     }
 }

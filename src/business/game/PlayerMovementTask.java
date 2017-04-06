@@ -22,7 +22,7 @@ public class PlayerMovementTask extends Task<Point> {
     private static final double MAX_SPEED = 450.0;
     private static final double ROTATION_SPEED = 360.0;
     private static final double PASSIVE_ACCELERATION = 300.0;
-    private static final double FPS = 57.0;
+    private static final double FPS = 30.0;
 
     final BooleanProperty upPressed = new SimpleBooleanProperty(false);
     final BooleanProperty downPressed = new SimpleBooleanProperty(false);
@@ -37,6 +37,8 @@ public class PlayerMovementTask extends Task<Point> {
     private BoardController boardController;
     private double boardSizeX;
     private double boardSizeY;
+
+
 
     private ExecutorService executor = Executors.newSingleThreadExecutor();
 
