@@ -1,13 +1,11 @@
 package business.game;
 
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleDoubleProperty;
-
 import java.io.Serializable;
 
 public class Point implements Serializable {
-    double x = 0.0;
-    double y = 0.0;
+    private static final long serialVersionUID = -4548763690658025255L;
+    private double x = 0.0;
+    private double y = 0.0;
 
     public Point() {
         this(0.0, 0.0);
@@ -27,4 +25,9 @@ public class Point implements Serializable {
     }
 
     public double getY() { return y; }
+
+    @Override
+    public String toString() {
+        return "{ " + this.x + ", " + this.y + " }";
+    }
 }

@@ -1,83 +1,129 @@
 package business.server;
 
-import business.model.ConnectionData;
-import com.sun.deploy.util.SessionState;
-
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.Serializable;
-import java.net.*;
+import java.io.*;
+import java.net.DatagramPacket;
+import java.net.DatagramSocket;
+import java.net.InetAddress;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
- * Created by Robert on 03.04.2017.
+ * Created by Robert on 12.04.2017.
  */
-public class Server <T extends Serializable> {
-    private final int maxClients;
-    int port = 4000;
+public class Server {
+    private int port;
+    private int maxClientsNumber;
+    private int clientsNumber = 0;
+    private ExecutorService waitForClientsExecutor = Executors.newSingleThreadExecutor();
+    private ExecutorService clientsHandlersExecutor;
 
-    private DatagramSocket serverSocket;
-    private static final int RECEIVE_BUFFER_SIZE = 1024;
-    private int connectedClients = 0;
+    private int clientPort;
+    private InetAddress clientAddress;
+
     private List<ClientHandler> clientHandlers;
-    private ExecutorService executor;
-    private ExecutorService clientAcceptExecutor;
 
+    private ServerEventHandler serverEventHandler;
 
-
-    byte[] receiveBuffer = new byte[RECEIVE_BUFFER_SIZE];
-
-    public Server(int port, int maxClients) throws IOException {
-        this.maxClients = maxClients;
-        this.port = port;
-        this.clientHandlers = new ArrayList<>(maxClients);
-        this.executor = Executors.newFixedThreadPool(maxClients);
-        this.clientAcceptExecutor = Executors.newSingleThreadExecutor();
-        this.serverSocket = new DatagramSocket(port);
+    public Server(int port) {
+        this(port, 3);
     }
 
-
+    public Server(int port, int maxClientsNumber) {
+        this.port = port;
+        this.maxClientsNumber = maxClientsNumber;
+        this.clientHandlers = new ArrayList<>(maxClientsNumber);
+        this.clientsHandlersExecutor = Executors.newFixedThreadPool(maxClientsNumber);
+    }
 
     public void start() {
-        //rozpoczęcie rejestracji klientów
-        //klienci wysyłają numery swoich portów
-        //aby potem serwer wiedział do kogo wysyłać
-
-
-            clientAcceptExecutor.submit(() -> {
-                try {
-                    printMessage("Server start");
-                    printMessage("Connected clients = " + connectedClients);
-                    ServerSocket serverSocket = new ServerSocket(port);
-                    while (true) {
-                        printMessage("Waiting for client.");
-                        Socket socket = serverSocket.accept();
-                        System.out.println(socket.getInetAddress());
-                        ObjectInputStream in = new ObjectInputStream(socket.getInputStream());
-                        ConnectionData<Integer> connectionData = (ConnectionData<Integer>) in.readObject();
-                        printMessage("Received clients' port: " + connectionData.getData());
-
-
-                        ClientHandler clientHandler = new ClientHandler(socket);
-                        executor.submit(clientHandler);
-
-
-                    }
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
-
+        waitForClientsExecutor.submit(this::waitForClients);
     }
 
-    private void printMessage(String message) {
-        System.out.println(message);
+
+
+    public void waitForClients() {
+        byte[] receiveData = new byte[1024];
+        try (DatagramSocket serverSocket = new DatagramSocket(port)) {
+            while (clientsNumber < maxClientsNumber) {
+                print("Waiting for client.");
+                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
+                serverSocket.receive(receivePacket);
+
+                ClientInfo clientInfo = new ClientInfo(receivePacket.getAddress(), receivePacket.getPort());
+
+                serverEventHandler.clientConnected(clientInfo);
+
+                print("Client " + clientInfo.getAddress() + " " + clientInfo.getPort() + " connected.");
+
+                ClientHandler clientHandler = new ClientHandler(clientInfo, serverEventHandler);
+
+                clientHandlers.add(clientHandler);
+                clientHandler.send("Hello".getBytes());
+
+
+
+                print("Sent hello message.");
+
+                clientsHandlersExecutor.submit(clientHandler);
+
+                clientsNumber++;
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+
+
+    public void sendDataToClients(byte[] data) {
+//        for (ClientHandler handler : clientHandlers) {
+//            handler.send(data);
+//        }
+        for (int i = 0; i < clientHandlers.size(); i++) {
+            clientHandlers.get(i).send(data);
+        }
+    }
+
+    public static void print(Object x) {
+        String msg = String.valueOf(x);
+        DateFormat df = new SimpleDateFormat("MM/dd/yyyy HH:mm:ss");
+        Date today = Calendar.getInstance().getTime();
+        String reportDate = df.format(today);
+
+        System.out.println(reportDate + ": " + msg);
+    }
+
+    public static byte[] convertToBytes(Object object) {
+        try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+             ObjectOutput out = new ObjectOutputStream(bos)) {
+            out.writeObject(object);
+            return bos.toByteArray();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static Object convertFromBytes(byte[] bytes) {
+        try (ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+             ObjectInput in = new ObjectInputStream(bis)) {
+            return in.readObject();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public void setServerEventHandler(ServerEventHandler serverEventHandler) {
+        this.serverEventHandler = serverEventHandler;
     }
 }

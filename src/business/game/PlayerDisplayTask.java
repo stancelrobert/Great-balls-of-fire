@@ -14,7 +14,7 @@ import javafx.scene.shape.Line;
  */
 public class PlayerDisplayTask extends Task<Void> {
     public static final double RADIUS = 25.0;
-    private static final double FPS = 60.0;
+    private static final double FPS = 57.0;
     private final FPSManager fpsManager = new FPSManager(FPS);
 
     private Player player;
@@ -35,32 +35,52 @@ public class PlayerDisplayTask extends Task<Void> {
 
     public PlayerDisplayTask(Player player) {
         this.player = player;
-        Platform.runLater(() -> {
-            circle.centerXProperty().bind(pX);
-            circle.centerYProperty().bind(pY);
+        circle.centerXProperty().bind(pX);
+        circle.centerYProperty().bind(pY);
+        circle.setFill(Color.web(player.getColor()));
 
-            directionLine.startXProperty().bind(pX);
-            directionLine.startYProperty().bind(pY);
+        directionLine.startXProperty().bind(pX);
+        directionLine.startYProperty().bind(pY);
 
-            directionLine.endXProperty().bind(eX);
-            directionLine.endYProperty().bind(eY);
-        });
+        directionLine.endXProperty().bind(eX);
+        directionLine.endYProperty().bind(eY);
     }
 
     @Override
-    protected Void call() throws Exception {
-        fpsManager.start();
-        while (!Thread.interrupted()) {
+    protected Void call() {
+        try {
+            //fpsManager.start();
+            while (!Thread.interrupted()) {
 
-            pX.set(player.getCoords().getX());
-            pY.set(player.getCoords().getY());
+                pX.set(player.getCoords().getX()+293);
+                pY.set(player.getCoords().getY()+310);
 
-            eX.set(player.getCoords().getX()+circle.getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
-            eY.set(player.getCoords().getY()+circle.getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+                eX.set(player.getCoords().getX()+293+circle.getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
+                eY.set(player.getCoords().getY()+310+circle.getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
 
 
-            fpsManager.waitForNextFrame();
+                //fpsManager.waitForNextFrame();
+            }
+        }
+        catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
+    }
+
+    public void setpX(double pX) {
+        this.pX.set(pX);
+    }
+
+    public void setpY(double pY) {
+        this.pY.set(pY);
+    }
+
+    public void seteX(double eX) {
+        this.eX.set(eX);
+    }
+
+    public void seteY(double eY) {
+        this.eY.set(eY);
     }
 }
