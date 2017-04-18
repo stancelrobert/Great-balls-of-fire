@@ -159,7 +159,7 @@ public class Game {
 
             //Jak odkomentujecie printa to kolizja zaczyna coś działać XDDDDDD
 
-            //Server.print("");//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
+            Server.print("");//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
             return true;
         }
         else {
