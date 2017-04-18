@@ -70,51 +70,86 @@ public class Game {
 
     }
 
-    private void serveCollision(Player p1, Player p2) {
+    private  void serveCollision(Player p1, Player p2) {
         playersMovementTasks.get(p1).setActive(false);
         playersMovementTasks.get(p2).setActive(false);
 
-        Vector v1 = new Vector(Math.cos(p1.getSpeed()), Math.sin(p1.getSpeed()));
-        Vector v2 = new Vector(Math.cos(p2.getSpeed()), Math.sin(p2.getSpeed()));
+        double p1speedcos = p1.getSpeed()*Math.cos(p1.getRotation());
+        double p1speedsin = p1.getSpeed()*Math.sin(p1.getRotation());
+        double p2speedcos = p2.getSpeed()*Math.cos(p2.getRotation());
+        double p2speedsin = p2.getSpeed()*Math.sin(p2.getRotation());
+
+        Vector v1 = new Vector(Math.cos(Math.toRadians(p1.getRotation()))*p1.getSpeed(),
+                Math.sin(Math.toRadians(p1.getRotation()))*p1.getSpeed());
+        Vector v2 = new Vector(Math.cos(Math.toRadians(p2.getRotation()))*p2.getSpeed(),
+                Math.sin(Math.toRadians(p2.getRotation()))*p2.getSpeed());
         Vector v3 = new Vector(p2.getCoords().getX() - p1.getCoords().getX(),
-                                p2.getCoords().getY() - p1.getCoords().getY());
+                p2.getCoords().getY() - p1.getCoords().getY());
+
+        //System.out.println("v1: " + v1);
+        //System.out.println("v3: " + v3);
+
         double b1 = Math.atan2(v1.getY(), v1.getX()) - Math.atan2(v3.getY(), v3.getX());
-        double a1 = 90 - b1;
+        double a1 = 3.1415/2.0 - b1;
+
+
+
+        //System.out.println("a1 b1: " + Math.toDegrees(a1) + " " + Math.toDegrees(b1));
+
         double cosa1 = Math.cos(a1);
         double sina1 = Math.sin(a1);
         double cosb1 = Math.cos(b1);
         double sinb1 = Math.sin(b1);
-        Vector u11 = new Vector(Math.cos(v1.getX()*cosa1 + v1.getY()*sina1),
-                                Math.cos(-v1.getX()*sina1 + v1.getY()*cosa1));
-        Vector u12 = new Vector(Math.cos(v1.getX()*cosb1 + v1.getY()*sinb1),
-                Math.cos(-v1.getX()*sinb1 + v1.getY()*cosb1));
+
+        Vector u11 = new Vector(cosa1*(-v1.getX()*cosa1 - v1.getY()*sina1),
+                cosa1*(-v1.getX()*sina1 + v1.getY()*cosa1));
+        Vector u12 = new Vector(sina1*(v1.getX()*cosb1 + v1.getY()*sinb1),
+                sina1*(-v1.getX()*sinb1 + v1.getY()*cosb1));
+
+        //System.out.println("u11: " + u11);
+        //System.out.println("u12: " + u12);
 
         v3.setLocation(-v3.getX(), -v3.getY());
 
+        //System.out.println("v2: " + v2);
+        //System.out.println("v3: " + v3);
+
         double b2 = Math.atan2(v2.getY(), v2.getX()) - Math.atan2(v3.getY(), v3.getX());
-        double a2 = 90 - b2;
+        double a2 = 3.1415/2 - b2;
+
+        //System.out.println("a2 + b2: " + Math.toDegrees(a2) + " " + Math.toDegrees(b2));
+
         double cosa2 = Math.cos(a2);
         double sina2 = Math.sin(a2);
         double cosb2 = Math.cos(b2);
         double sinb2 = Math.sin(b2);
-        Vector u21 = new Vector(Math.cos(v2.getX()*cosa2 + v2.getY()*sina2),
-                Math.cos(-v2.getX()*sina2 + v2.getY()*cosa2));
-        Vector u22 = new Vector(Math.cos(v2.getX()*cosb2 + v2.getY()*sinb2),
-                Math.cos(-v2.getX()*sinb2 + v2.getY()*cosb2));
+
+        Vector u21 = new Vector(cosa2*(v2.getX()*cosa2 + v2.getY()*sina2),
+                cosa2*(v2.getX()*sina2 - v2.getY()*cosa2));
+        Vector u22 = new Vector(sina2*(v2.getX()*cosb2 + v2.getY()*sinb2),
+                sina2*(-v2.getX()*sinb2 + v2.getY()*cosb2));
+
+        //System.out.println("u21: " + u21);
+        //System.out.println("u22: " + u22);
 
         Vector newv1 = new Vector(u11.getX()+u22.getX(), u11.getY()+u22.getY());
         Vector newv2 = new Vector(u12.getX()+u21.getX(), u12.getY()+u21.getY());
 
-        p1.setRotation(Math.atan2(newv1.getY(), newv1.getX()));
-        p2.setRotation(Math.atan2(newv2.getY(), newv2.getX()));
+        //System.out.println("newv1: " + newv1);
+        //System.out.println("newv2: " + newv2);
+
+
+        p1.setRotation(Math.toDegrees(Math.atan2(newv1.getY(), newv1.getX())));
+        p2.setRotation(Math.toDegrees(Math.atan2(newv2.getY(), newv2.getX())));
 
         p1.setSpeed(Math.sqrt(newv1.getX()*newv1.getX()+newv1.getY()*newv1.getY()));
         p2.setSpeed(Math.sqrt(newv2.getX()*newv2.getX()+newv2.getY()*newv2.getY()));
 
+        //System.out.println(p1);
+        //System.out.println(p2);
+
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
-
-        //Server.print("elo");
 
         while (areColliding(p1, p2)) {}
 
@@ -135,7 +170,7 @@ public class Game {
 
             //Jak odkomentujecie printa to kolizja zaczyna coś działać XDDDDDD
 
-            //Server.print("");//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
+            Server.print("");//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
             return true;
         }
         else {
