@@ -37,7 +37,34 @@ public class Vector extends Point implements Serializable {
         );
     }
 
+    public void scale(double factor) {
+        this.x *= factor;
+        this.y *= factor;
+    }
+
     public double value() {
         return Math.sqrt(x*x+y*y);
+    }
+
+    public void add(Vector v) {
+        this.x += v.x;
+        this.y += v.y;
+    }
+
+    public static double getAngle(Vector v1, Vector v2) {
+        return Math.atan2(v2.getY(), v2.getX()) - Math.atan2(v1.getY(), v1.getX());
+    }
+
+    public static Vector getRotatedVector(Vector v1, double angle) {
+        return new Vector(v1.getX()*Math.cos(angle) - v1.getY()*Math.sin(angle),
+                v1.getX()*Math.sin(angle) + v1.getY()*Math.cos(angle));
+    }
+
+    public static Vector getScaledVector(Vector v1, double factor) {
+        return new Vector(v1.getX()*factor, v1.getY()*factor);
+    }
+
+    public static Vector addVectors(Vector v1, Vector v2) {
+        return new Vector(v1.x+v2.x, v1.y+v2.y);
     }
 }

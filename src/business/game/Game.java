@@ -55,7 +55,7 @@ public class Game {
 
                     if (areColliding(p1, p2)) {
                         Server.print("Serving collision.");
-                        serveCollision(p1, p2);
+                        serveCollision2(p1, p2);
                         Server.print("Collision served.");
                     }
                 }
@@ -63,9 +63,62 @@ public class Game {
         }
     }
 
+    private void serveCollision2(Player p1, Player p2) {
+        playersMovementTasks.get(p1).setActive(false);
+        playersMovementTasks.get(p2).setActive(false);
+        playersMovementTasks.get(p1).setControllable(false);
+        playersMovementTasks.get(p2).setControllable(false);
+
+        Vector v1 = p1.getSpeedXY();
+        Vector v2 = p2.getSpeedXY();
+
+        Vector v3 = new Vector(p2.getCoords().getX() - p1.getCoords().getX(),
+                p2.getCoords().getY() - p1.getCoords().getY());
+
+        double b1 = Vector.getAngle(v1, v2);
+        double a1 = Math.PI/2 - b1;
+
+        Vector u11 = Vector.getRotatedVector(v1, -a1);
+        u11.scale(Math.cos(a1));
+
+        Vector u12 = Vector.getRotatedVector(v1, b1);
+        u12.scale(Math.sin(a1));
+
+
+
+        v3.rotate(Math.PI);
+
+        double b2 = Vector.getAngle(v2, v3);
+        double a2 = 90 - b2;
+
+        Vector u21 = Vector.getRotatedVector(v2, -a2);
+        u21.scale(Math.cos(a2));
+
+        Vector u22 = Vector.getRotatedVector(v2, b2);
+        u22.scale(Math.sin(a2));
+
+        Vector newv1 = Vector.addVectors(u11, u22);
+        Vector newv2 = Vector.addVectors(u12, u21);
+
+        p1.setSpeedXY(newv1);
+        p2.setSpeedXY(newv2);
+
+        playersMovementTasks.get(p1).setActive(true);
+        playersMovementTasks.get(p2).setActive(true);
+
+        while (areColliding(p1, p2));
+
+        playersMovementTasks.get(p1).setControllable(true);
+        playersMovementTasks.get(p2).setControllable(true);
+
+
+    }
+
     private  void serveCollision(Player p1, Player p2) {
         playersMovementTasks.get(p1).setActive(false);
         playersMovementTasks.get(p2).setActive(false);
+        playersMovementTasks.get(p1).setControllable(false);
+        playersMovementTasks.get(p2).setControllable(false);
 
         Vector v1 = new Vector(Math.cos(Math.toRadians(p1.getRotation()))*p1.getSpeed(),
                                 Math.sin(Math.toRadians(p1.getRotation()))*p1.getSpeed());
@@ -141,6 +194,10 @@ public class Game {
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
 
+        while (areColliding(p1, p2));
+
+        playersMovementTasks.get(p1).setControllable(true);
+        playersMovementTasks.get(p2).setControllable(true);
 
     }
 
@@ -154,9 +211,7 @@ public class Game {
         y = p1y - p2y;
 
         if (x*x + y*y <= COLLISION_TRESHOLD) {
-
             //UWAGAAA
-
             //Jak odkomentujecie printa to kolizja zaczyna coś działać XDDDDDD
 
             Server.print("");//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
