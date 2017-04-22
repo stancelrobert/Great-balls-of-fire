@@ -15,6 +15,8 @@ public class MenuController {
     }
 
     public void newGameButtonClicked(ActionEvent actionEvent) {
+
+
         mainController.initNewGame();
     }
 

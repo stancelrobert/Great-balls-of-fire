@@ -32,7 +32,6 @@ public class MainController implements Initializable {
     public void initialize(URL location, ResourceBundle resources) {
         menuController.setBoardController(boardController);
         menuController.setMainController(this);
-
         boardController.setMainController(this);
     }
 

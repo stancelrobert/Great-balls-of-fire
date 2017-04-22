@@ -9,6 +9,8 @@ public class Player implements Serializable {
     private double rotation = 0.0;
     private double speed = 0.0;
 
+    private int points;
+
     private Vector speedXY = new Vector(0.0, 0.0);
     private String color = "#000000";
 
