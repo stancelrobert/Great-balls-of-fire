@@ -15,12 +15,12 @@ public class MenuController {
     }
 
     public void newGameButtonClicked(ActionEvent actionEvent) {
-
-
+        mainController.getParent().requestFocus();
         mainController.initNewGame();
     }
 
     public void joinGameButtonClicked(ActionEvent actionEvent) {
+        mainController.getParent().requestFocus();
         mainController.initClient();
     }
 }
