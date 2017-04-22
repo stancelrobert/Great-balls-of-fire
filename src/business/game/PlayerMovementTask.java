@@ -7,6 +7,7 @@ public class PlayerMovementTask implements Runnable {
     private Player player;
 
     private boolean active = true;
+    private boolean controllable = true;
 
 
     private boolean upPressed = false;
@@ -34,12 +35,12 @@ public class PlayerMovementTask implements Runnable {
              */
             if (active) {
                 delta_t = (double)(currTime - lastTime)/(1000000000.0);
-                if (upPressed && player.getSpeedValue() < Game.MAX_SPEED) {
+                if (upPressed && player.getSpeedValue() < Game.MAX_SPEED && controllable) {
                     delta_v = (Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
                     player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
                     player.setSpeed(player.getSpeed() + (Game.ACCELERATION - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
                 }
-                else if (downPressed && player.getSpeedValue() < Game.MAX_SPEED) {
+                else if (downPressed && player.getSpeedValue() < Game.MAX_SPEED && controllable) {
                     delta_v = -(Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
                     player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
                     player.setSpeed(player.getSpeed() - (Game.ACCELERATION + Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
@@ -55,12 +56,12 @@ public class PlayerMovementTask implements Runnable {
                     }
                 }
 
-                if (leftPressed) {
+                if (leftPressed && controllable) {
                     delta_angle = -Game.ROTATION_SPEED * delta_t;
                     player.rotate(Math.toRadians(delta_angle));
                     player.setRotation((player.getRotation() + delta_angle));
                 }
-                else if (rightPressed) {
+                else if (rightPressed && controllable) {
                     delta_angle = Game.ROTATION_SPEED * delta_t;
                     player.rotate(Math.toRadians(delta_angle));
                     player.setRotation((player.getRotation() + delta_angle));
@@ -122,5 +123,9 @@ public class PlayerMovementTask implements Runnable {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public void setControllable(boolean controllable) {
+        this.controllable = controllable;
     }
 }
