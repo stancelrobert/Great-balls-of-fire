@@ -1,3 +1,6 @@
+import business.game.Player;
+import business.game.Point;
+import business.game.Vector;
 import controllers.MainController;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
@@ -5,7 +8,9 @@ import javafx.scene.*;
 import javafx.stage.Stage;
 
 public class Main extends Application {
-    public static void main(String[] args) { launch(args); }
+    public static void main(String[] args) {
+        launch(args);
+    }
 
     @Override public void start(Stage primaryStage) throws Exception {
         FXMLLoader loader = new FXMLLoader(getClass().getResource("views/main.fxml"));

@@ -1,198 +1,131 @@
 package business.game;
 
-import controllers.BoardController;
-import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.concurrent.Task;
-import javafx.scene.Scene;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Circle;
-import javafx.scene.shape.Line;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
 /**
  * Created by Robert on 02.04.2017.
  */
-public class PlayerMovementTask extends Task<Point> {
-    public static final double RADIUS = 25.0;
-    private static final double ACCELERATION = 700.0;
-    private static final double MAX_SPEED = 450.0;
-    private static final double ROTATION_SPEED = 360.0;
-    private static final double PASSIVE_ACCELERATION = 300.0;
-    private static final double FPS = 30.0;
-
-    final BooleanProperty upPressed = new SimpleBooleanProperty(false);
-    final BooleanProperty downPressed = new SimpleBooleanProperty(false);
-    final BooleanProperty rightPressed = new SimpleBooleanProperty(false);
-    final BooleanProperty leftPressed = new SimpleBooleanProperty(false);
-
-
+public class PlayerMovementTask implements Runnable {
     private Player player;
 
-    private Circle circle = new Circle(RADIUS);
-    private Line directionLine = new Line();
-    private BoardController boardController;
-    private double boardSizeX;
-    private double boardSizeY;
+    private boolean active = true;
+    private boolean controllable = true;
 
 
+    private boolean upPressed = false;
+    private boolean downPressed = false;
+    private boolean rightPressed = false;
+    private boolean leftPressed = false;
 
-    private ExecutorService executor = Executors.newSingleThreadExecutor();
-
-    public PlayerMovementTask(BoardController boardController, Player player) {
+    public PlayerMovementTask(Player player) {
         this.player = player;
-        this.boardController = boardController;
-        this.boardSizeX = this.boardController.getBoardPane().getWidth();
-        this.boardSizeY = this.boardController.getBoardPane().getHeight();
-        Platform.runLater(() -> {
-            circle.setRadius(RADIUS);
-            circle.setFill(Color.web("#FF0000"));
-        });
-        player.setCoords(300, 300);
-        move(300, 300);
+        move(player.getCoords().getX(), player.getCoords().getY());
+    }
 
+    @Override
+    public void run() {
+        long currTime;
+        double delta_t;
+        double delta_v;
+        double delta_angle;
+        long lastTime = System.nanoTime();
+        while (!Thread.interrupted()) {
+
+            currTime = System.nanoTime();
+            /*
+                set speed and rotation
+             */
+            if (active) {
+                delta_t = (double)(currTime - lastTime)/(1000000000.0);
+                if (upPressed && player.getSpeedValue() < Game.MAX_SPEED && controllable) {
+                    delta_v = (Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
+                    player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
+                    player.setSpeed(player.getSpeed() + (Game.ACCELERATION - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
+                }
+                else if (downPressed && player.getSpeedValue() < Game.MAX_SPEED && controllable) {
+                    delta_v = -(Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
+                    player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
+                    player.setSpeed(player.getSpeed() - (Game.ACCELERATION + Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
+                }
+                else if (player.getSpeedValue() != 0) {
+                    delta_v = - Game.PASSIVE_ACCELERATION * delta_t;
+                    if (player.getSpeedValue() > delta_v) {
+                        player.getSpeedXY().add(delta_v);
+                        player.setSpeed(player.getSpeed() - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION * delta_t);
+                    }
+                    else {
+                        player.getSpeedXY().setLocation(0.0, 0.0);
+                    }
+                }
+
+                if (leftPressed && controllable) {
+                    delta_angle = -Game.ROTATION_SPEED * delta_t;
+                    player.rotate(Math.toRadians(delta_angle));
+                    player.setRotation((player.getRotation() + delta_angle));
+                }
+                else if (rightPressed && controllable) {
+                    delta_angle = Game.ROTATION_SPEED * delta_t;
+                    player.rotate(Math.toRadians(delta_angle));
+                    player.setRotation((player.getRotation() + delta_angle));
+                }
+
+                /*
+                    perform movement
+                 */
+//                move(player.getCoords().getX()+Math.cos(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t,
+//                        player.getCoords().getY()+Math.sin(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t);
+                move(player.getCoords().getX()+player.getSpeedXY().getX()*delta_t,
+                        player.getCoords().getY()+player.getSpeedXY().getY()*delta_t);
+
+            }
+
+            lastTime = currTime;
+        }
+
+        upPressed = false;
+        downPressed = false;
+        leftPressed = false;
+        rightPressed = false;
+    }
+
+    private boolean correctCoords(double x, double y) {
+        return (Math.sqrt(x*x + y*y) < (Game.BOARD_RADIUS - Game.PLAYER_RADIUS));
+    }
+
+    private void move(double x, double y) {
+        if (correctCoords(x, y)) {
+            player.setCoords(x, y);
+        }
+        else {
+            player.getSpeedXY().setLocation(0.0, 0.0);
+            player.setSpeed(0.0);
+        }
     }
 
     public Player getPlayer() {
         return player;
     }
 
-    public void setPlayer(Player player) {
-        this.player = player;
+
+    public void setUpPressed(boolean upPressed) {
+        this.upPressed = upPressed;
     }
 
-
-    @Override
-    protected Point call() throws Exception {
-        dlugoTrwaleObliczenia();
-        return null;
+    public void setDownPressed(boolean downPressed) {
+        this.downPressed = downPressed;
     }
 
-
-    void dlugoTrwaleObliczenia() {
-        long lastTime = -1;
-        long currTime;
-        double delta_t;
-        double rotationInRadians;
-        double currTime2;
-        long millis;
-        int nanos;
-        while (!Thread.interrupted()) {
-            currTime = System.nanoTime();
-            if (lastTime != -1) {
-                /*
-                    set speed and rotation
-                 */
-                delta_t = (double)(currTime - lastTime)/(1000000000.0);
-
-                if (upPressed.get() && player.getSpeed() < MAX_SPEED) {
-                    player.setSpeed(player.getSpeed() + (ACCELERATION - Math.signum(player.getSpeed()) * PASSIVE_ACCELERATION) * delta_t);
-                }
-                else if (downPressed.get() && player.getSpeed() > -MAX_SPEED) {
-                    player.setSpeed(player.getSpeed() - (ACCELERATION + Math.signum(player.getSpeed()) * PASSIVE_ACCELERATION) * delta_t);
-                }
-                else if (player.getSpeed() != 0) {
-                    player.setSpeed(player.getSpeed() - Math.signum(player.getSpeed()) * PASSIVE_ACCELERATION * delta_t);
-                }
-
-                if (leftPressed.get()) {
-                    player.setRotation(player.getRotation() - (ROTATION_SPEED * delta_t) % 360);
-                }
-                else if (rightPressed.get()) {
-                    player.setRotation(player.getRotation() + (ROTATION_SPEED * delta_t) % 360);
-                }
-                /*
-                    directionLines' properties don't need to be bind as circles' ones, because
-                    theirs changes per time unit are much lower
-                 */
-                Platform.runLater(() -> {
-                    directionLine.setStartX(circle.getCenterX());
-                    directionLine.setStartY(circle.getCenterY());
-
-                    directionLine.setEndX(
-                            circle.getCenterX()+circle.getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
-                    directionLine.setEndY(
-                            circle.getCenterY()+circle.getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
-                });
-
-                /*
-                    perform movement
-                 */
-                rotationInRadians=player.getRotation()*Math.PI/180.0;
-                move(player.getCoords().getX()+Math.cos(rotationInRadians) * player.getSpeed() * delta_t,
-                        player.getCoords().getY()+Math.sin(rotationInRadians) * player.getSpeed() * delta_t);
-            }
-
-            /*
-                refresh rate
-             */
-            currTime2 = System.nanoTime();
-            millis = (long)(1000.0/FPS-(currTime2-currTime)/1000000);
-            nanos = (int)(((1000.0/FPS-(currTime2-currTime)/1000000.0)-((double)millis))*1000000.0);
-            try {
-                Thread.sleep(millis, nanos);
-            } catch (InterruptedException e){
-                break;
-            }
-
-            lastTime = currTime;
-        }
+    public void setRightPressed(boolean rightPressed) {
+        this.rightPressed = rightPressed;
     }
 
-    private boolean correctCoords(double x, double y) {
-        return (x > RADIUS && y > RADIUS && x < boardSizeX-RADIUS && y < boardSizeY-RADIUS);
+    public void setLeftPressed(boolean leftPressed) {
+        this.leftPressed = leftPressed;
     }
 
-    private void move(double x, double y) {
-        if (correctCoords(x, y)) {
-            player.getCoords().setLocation(x, y);
-            updateValue(player.getCoords());
-        }
-        else {
-            player.setSpeed(0.0);
-            updateValue(player.getCoords());
-        }
+    public void setActive(boolean active) {
+        this.active = active;
     }
 
-    public void runMovementThread(Scene scene) {
-        moveCircleOnKeyPress(scene);
-
-        circle.centerXProperty().bind(this.valueProperty().getValue().getXProperty());
-        circle.centerYProperty().bind(this.valueProperty().getValue().getYProperty());
-
-        executor.submit(this);
+    public void setControllable(boolean controllable) {
+        this.controllable = controllable;
     }
-
-    private void moveCircleOnKeyPress(Scene scene) {
-        scene.setOnKeyPressed(event -> {
-            switch (event.getCode()) {
-                case UP:    upPressed.set(true); break;
-                case RIGHT: rightPressed.set(true); break;
-                case DOWN:  downPressed.set(true); break;
-                case LEFT:  leftPressed.set(true); break;
-            }
-        });
-
-        scene.setOnKeyReleased(event -> {
-            switch (event.getCode()) {
-                case UP:    upPressed.set(false); break;
-                case RIGHT: rightPressed.set(false); break;
-                case DOWN:  downPressed.set(false); break;
-                case LEFT:  leftPressed.set(false); break;
-            }
-        });
-    }
-
-    public Circle getCircle() {
-        return circle;
-    }
-
-    public Line getDirectionLine() {
-        return directionLine;
-    }
-
-
 }
