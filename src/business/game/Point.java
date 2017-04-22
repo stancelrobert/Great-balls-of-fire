@@ -4,8 +4,8 @@ import java.io.Serializable;
 
 public class Point implements Serializable {
     private static final long serialVersionUID = -4548763690658025255L;
-    private double x = 0.0;
-    private double y = 0.0;
+    protected double x = 0.0;
+    protected double y = 0.0;
 
     public Point() {
         this(0.0, 0.0);
@@ -25,6 +25,14 @@ public class Point implements Serializable {
     }
 
     public double getY() { return y; }
+
+    public void setX(double x) {
+        this.x = x;
+    }
+
+    public void setY(double y) {
+        this.y = y;
+    }
 
     @Override
     public String toString() {

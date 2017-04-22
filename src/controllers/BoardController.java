@@ -2,6 +2,7 @@ package controllers;
 
 import business.game.Player;
 import business.game.PlayerDisplayTask;
+import business.server.Server;
 import business.util.FPSManager;
 import javafx.application.Platform;
 import javafx.fxml.FXML;
@@ -16,10 +17,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 
-public class BoardController implements Initializable {
+public class BoardController {
     @FXML private Circle outsideBoardCircle;
     @FXML private Circle insideBoardCircle;
-    private ExecutorService executor = Executors.newFixedThreadPool(3);
+
     public AnchorPane getBoardPane() {
         return boardPane;
     }
@@ -27,8 +28,6 @@ public class BoardController implements Initializable {
     @FXML private AnchorPane boardPane;
 
     private MainController mainController;
-
-    private PlayerDisplayTask playerDisplayTask;
 
     private ArrayList<PlayerDisplayTask> displayTasks = new ArrayList<>(3);
     private ArrayList<Player> players = new ArrayList<>(3);
@@ -38,44 +37,37 @@ public class BoardController implements Initializable {
     }
 
     public void addPlayer(Player player) {
-
         Platform.runLater(() -> {
-            //this.playerMovementTask = new PlayerMovementTask(this, this.mainController.getStage().getScene(), player);
             players.add(player);
             PlayerDisplayTask playerDisplayTask = new PlayerDisplayTask(player);
             displayTasks.add(playerDisplayTask);
-            //this.executor.submit(playerMovementTask);
-            //this.executor.submit(playerDisplayTask);
+
             this.boardPane.getChildren().add(playerDisplayTask.getCircle());
             this.boardPane.getChildren().add(playerDisplayTask.getDirectionLine());
         });
-
     }
 
-    public void addOtherPlayer(Player player) {
-        players.add(player);
-    }
-
-    @Override
-    public void initialize(URL location, ResourceBundle resources) {
-
-    }
-
-    public void displayTask() {
+    public synchronized void displayTask() {
         FPSManager fpsManager = new FPSManager(57.0);
         Player player;
         PlayerDisplayTask displayTask;
         fpsManager.start();
-        while (!Thread.interrupted()) {
+        while (true) {
             for (int i = 0; i < players.size(); i++) {
-                player = players.get(i);
-                displayTask = displayTasks.get(i);
+                try {
+                    player = players.get(i);
+                    displayTask = displayTasks.get(i);
 
-                displayTask.setpX(player.getCoords().getX()+293);
-                displayTask.setpY(player.getCoords().getY()+310);
+                    displayTask.setpX(player.getCoords().getX()+293);
+                    displayTask.setpY(player.getCoords().getY()+310);
 
-                displayTask.seteX(player.getCoords().getX()+293+displayTask.getCircle().getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
-                displayTask.seteY(player.getCoords().getY()+310+displayTask.getCircle().getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+                    displayTask.seteX(player.getCoords().getX()+293+displayTask.getCircle().getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
+                    displayTask.seteY(player.getCoords().getY()+310+displayTask.getCircle().getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+                }
+                catch (IndexOutOfBoundsException e) {
+                    System.out.println("Must wait a sec.");
+                }
+
             }
             fpsManager.waitForNextFrame();
         }

@@ -23,6 +23,8 @@ public class PlayerMovementTask implements Runnable {
     public void run() {
         long currTime;
         double delta_t;
+        double delta_v;
+        double delta_angle;
         long lastTime = System.nanoTime();
         while (!Thread.interrupted()) {
 
@@ -32,29 +34,45 @@ public class PlayerMovementTask implements Runnable {
              */
             if (active) {
                 delta_t = (double)(currTime - lastTime)/(1000000000.0);
-
-                if (upPressed && player.getSpeed() < Game.MAX_SPEED) {
+                if (upPressed && player.getSpeedValue() < Game.MAX_SPEED) {
+                    delta_v = (Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
+                    player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
                     player.setSpeed(player.getSpeed() + (Game.ACCELERATION - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
                 }
-                else if (downPressed && player.getSpeed() > -Game.MAX_SPEED) {
+                else if (downPressed && player.getSpeedValue() < Game.MAX_SPEED) {
+                    delta_v = -(Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
+                    player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
                     player.setSpeed(player.getSpeed() - (Game.ACCELERATION + Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
                 }
-                else if (player.getSpeed() != 0) {
-                    player.setSpeed(player.getSpeed() - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION * delta_t);
+                else if (player.getSpeedValue() != 0) {
+                    delta_v = - Game.PASSIVE_ACCELERATION * delta_t;
+                    if (player.getSpeedValue() > delta_v) {
+                        player.getSpeedXY().add(delta_v);
+                        player.setSpeed(player.getSpeed() - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION * delta_t);
+                    }
+                    else {
+                        player.getSpeedXY().setLocation(0.0, 0.0);
+                    }
                 }
 
                 if (leftPressed) {
-                    player.setRotation((player.getRotation() - Game.ROTATION_SPEED * delta_t));
+                    delta_angle = -Game.ROTATION_SPEED * delta_t;
+                    player.rotate(Math.toRadians(delta_angle));
+                    player.setRotation((player.getRotation() + delta_angle));
                 }
                 else if (rightPressed) {
-                    player.setRotation((player.getRotation() + Game.ROTATION_SPEED * delta_t));
+                    delta_angle = Game.ROTATION_SPEED * delta_t;
+                    player.rotate(Math.toRadians(delta_angle));
+                    player.setRotation((player.getRotation() + delta_angle));
                 }
 
                 /*
                     perform movement
                  */
-                move(player.getCoords().getX()+Math.cos(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t,
-                        player.getCoords().getY()+Math.sin(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t);
+//                move(player.getCoords().getX()+Math.cos(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t,
+//                        player.getCoords().getY()+Math.sin(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t);
+                move(player.getCoords().getX()+player.getSpeedXY().getX()*delta_t,
+                        player.getCoords().getY()+player.getSpeedXY().getY()*delta_t);
 
             }
 
@@ -68,7 +86,7 @@ public class PlayerMovementTask implements Runnable {
     }
 
     private boolean correctCoords(double x, double y) {
-        return (Math.sqrt(x*x + y*y) < (Game.BOARD_RADIUS- Game.PLAYER_RADIUS));
+        return (Math.sqrt(x*x + y*y) < (Game.BOARD_RADIUS - Game.PLAYER_RADIUS));
     }
 
     private void move(double x, double y) {
@@ -76,6 +94,7 @@ public class PlayerMovementTask implements Runnable {
             player.setCoords(x, y);
         }
         else {
+            player.getSpeedXY().setLocation(0.0, 0.0);
             player.setSpeed(0.0);
         }
     }

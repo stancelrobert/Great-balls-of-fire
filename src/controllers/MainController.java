@@ -53,34 +53,29 @@ public class MainController implements Initializable {
     public void initClient() {
         initKeysEvents(stage.getScene());
 
-        ExecutorService executor = Executors.newFixedThreadPool(2);
-        //boardController.addPlayer(player);
+        Thread displayThread = new Thread(boardController::displayTask);
+        displayThread.start();
 
-        executor.submit(boardController::displayTask);
-        executor.submit(() -> {
+        Executors.newSingleThreadExecutor().submit(() -> {
+            int playersNumber = 0;
+            Player[] players = new Player[3];
+            byte[] sendData = "Hello".getBytes();
+            byte[] receiveData = new byte[1024];
             try {
-                Player[] players = new Player[3];
-                int playersNumber = 0;
                 clientSocket = new DatagramSocket();
-                byte[] sendData = "Hello".getBytes();
-                byte[] receiveData = new byte[1024];
                 DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("127.0.0.1"), 4000);
                 clientSocket.send(sendPacket);
 
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 clientSocket.receive(receivePacket);
-                String msg = new String(receivePacket.getData());
-
                 clientInfo = new ClientInfo(receivePacket.getAddress(), receivePacket.getPort());
 
-                System.out.println("From server: " + msg);
                 while (!Thread.interrupted()) {
                     receivePacket = new DatagramPacket(receiveData, receiveData.length);
                     clientSocket.receive(receivePacket);
-                    ByteArrayInputStream bis = new ByteArrayInputStream(receivePacket.getData());
-                    ObjectInput in = null;
-                    try {
-                        in = new ObjectInputStream(bis);
+
+                    try (ByteArrayInputStream bis = new ByteArrayInputStream(receivePacket.getData());
+                            ObjectInput in = new ObjectInputStream(bis)) {
                         int newPlayersNumber = in.readInt();
                         for (int i = 0; i < playersNumber; i++) {
                             Player player1 = (Player)in.readObject();
@@ -106,14 +101,9 @@ public class MainController implements Initializable {
                         //System.out.println(player1);
 
 
-                    } finally {
-                        try {
-                            if (in != null) {
-                                in.close();
-                            }
-                        } catch (IOException ex) {
-                            // ignore close exception
-                        }
+                    }
+                    catch (Exception e) {
+                        e.printStackTrace();
                     }
                 }
             }
@@ -121,16 +111,13 @@ public class MainController implements Initializable {
                 e.printStackTrace();
             }
         });
-
-
     }
 
     public void initNewGame() {
-
-
         Game game = new Game();
         Server server = new Server(4000, 3);
         ServerEventHandler serverEventHandler = new GameServerEventHandler(game);
+
         server.setServerEventHandler(serverEventHandler);
 
         server.start();
@@ -138,10 +125,10 @@ public class MainController implements Initializable {
         ExecutorService executor = Executors.newSingleThreadExecutor();
         executor.submit(() -> {
             while(!Thread.interrupted()) {
-                ByteArrayOutputStream bos = new ByteArrayOutputStream();
-                ObjectOutput out = null;
-                try {
-                    out = new ObjectOutputStream(bos);
+
+
+                try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                     ObjectOutput out = new ObjectOutputStream(bos)) {
                     out.writeInt(game.getPlayers().size());
                     for (Player player : game.getPlayers()) {
                         out.writeObject(player);
@@ -153,52 +140,52 @@ public class MainController implements Initializable {
                 catch (Exception e) {
                     e.printStackTrace();
                 }
-                finally {
-                    try {
-                        bos.close();
-                    } catch (Exception e) {
-                        e.printStackTrace();
-                    }
-                }
 
                 try {
-                    Thread.sleep(2);
+                    Thread.sleep(5);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
             }
         });
+    }
 
+    private void setByte(int index) {
+        if (bytes[index] != 1) {
+            bytes[index] = 1;
+            sendMessage();
+        }
+    }
 
+    private void resetByte(int index) {
+        if (bytes[index] != 0) {
+            bytes[index] = 0;
+            sendMessage();
+        }
     }
 
 
     private void initKeysEvents(Scene scene) {
         scene.setOnKeyPressed(event -> {
             switch (event.getCode()) {
-                case UP:    bytes[0] = 1; break;
-                case DOWN:  bytes[1] = 1; break;
-                case LEFT:  bytes[2] = 1; break;
-                case RIGHT: bytes[3] = 1; break;
+                case UP:    setByte(0); break;
+                case DOWN:  setByte(1); break;
+                case LEFT:  setByte(2); break;
+                case RIGHT: setByte(3); break;
             }
-
-            sendMessage();
         });
 
         scene.setOnKeyReleased(event -> {
             switch (event.getCode()) {
-                case UP:     bytes[0] = 0; break;
-                case DOWN:   bytes[1] = 0; break;
-                case LEFT:   bytes[2] = 0; break;
-                case RIGHT:  bytes[3] = 0; break;
+                case UP:    resetByte(0); break;
+                case DOWN:  resetByte(1); break;
+                case LEFT:  resetByte(2); break;
+                case RIGHT: resetByte(3); break;
             }
-
-            sendMessage();
         });
     }
 
     private void sendMessage() {
-
         try {
             DatagramPacket packet = new DatagramPacket(bytes, bytes.length, clientInfo.getAddress(), clientInfo.getPort());
             clientSocket.send(packet);

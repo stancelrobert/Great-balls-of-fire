@@ -8,6 +8,8 @@ public class Player implements Serializable {
     private Point coords = new Point();
     private double rotation = 0.0;
     private double speed = 0.0;
+
+    private Vector speedXY = new Vector(0.0, 0.0);
     private String color = "#000000";
 
     public String getColor() {
@@ -31,7 +33,7 @@ public class Player implements Serializable {
     }
 
     public void setRotation(double rotation) {
-        this.rotation = rotation % 360.0;
+        this.rotation = rotation % 360;
     }
 
     public double getSpeed() {
@@ -42,9 +44,17 @@ public class Player implements Serializable {
         this.speed = speed;
     }
 
+    public Vector getSpeedXY() {
+        return speedXY;
+    }
+
+    public void setSpeedXY(Vector speedXY) {
+        this.speedXY = speedXY;
+    }
+
     @Override
     public String toString() {
-        return this.coords + " " + Math.toDegrees(this.rotation) + " " + color;
+        return this.coords + " " + this.rotation + " " + color;
     }
 
     @Override
@@ -60,5 +70,13 @@ public class Player implements Serializable {
     @Override
     public int hashCode() {
         return color.hashCode();
+    }
+
+    public void rotate(double delta_angle) {
+        speedXY.rotate(delta_angle);
+    }
+
+    public double getSpeedValue() {
+        return speedXY.value();
     }
 }

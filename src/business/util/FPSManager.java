@@ -25,11 +25,13 @@ public class FPSManager {
 
     public void waitForNextFrame() {
         time2 = System.nanoTime();
-        millis = (long)(1000.0/FPS-(time2-time1)/1000000);
-        nanos = (int)(((1000.0/FPS-(time2-time1)/1000000.0)-((double)millis))*1000000.0);
+        millis = (long) (1000.0 / FPS - (time2 - time1) / 1000000.0);
+        nanos = (int) (((1000.0 / FPS - (time2 - time1) / 1000000.0) - ((double) millis)) * 1000000.0);
+
         try {
-            Thread.sleep(millis, nanos);
-        } catch (InterruptedException e){
+            if (millis >= 0 && nanos >= 0)
+                Thread.sleep(millis, nanos);
+        } catch (Exception e) {
             e.printStackTrace();
         }
         time1 = System.nanoTime();

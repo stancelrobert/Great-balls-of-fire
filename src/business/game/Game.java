@@ -10,10 +10,10 @@ import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-
 /**
  * Created by Robert on 03.04.2017.
  */
+
 public class Game {
     public static final int MAX_PLAYERS_NUMBER = 3;
     public static final double BOARD_RADIUS = 230;
@@ -24,6 +24,8 @@ public class Game {
     public static final double PASSIVE_ACCELERATION = 300.0;
     public static final String[] COLORS = { "#FF0000", "#00FF00", "#0000FF"};
 
+    private static final double COLLISION_TRESHOLD = 4*PLAYER_RADIUS*PLAYER_RADIUS;
+
     private List<Player> players = new ArrayList<>(MAX_PLAYERS_NUMBER);
     private Map<Player, PlayerMovementTask> playersMovementTasks = new HashMap<>(MAX_PLAYERS_NUMBER);
     private ExecutorService playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1);
@@ -31,7 +33,6 @@ public class Game {
     public void newRound() {
         playersMovementExecutor.shutdownNow();
         playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1);
-
 
         initPlayers();
 
@@ -47,7 +48,7 @@ public class Game {
 
         Player p1, p2;
         while (!Thread.interrupted()) {
-            for (int i = 0; i < players.size(); i++) {
+            for (int i = 0; i < players.size() - 1; i++) {
                 for (int j = i+1; j < players.size(); j++) {
                     p1 = players.get(i);
                     p2 = players.get(j);
@@ -59,30 +60,17 @@ public class Game {
                     }
                 }
             }
-            try {
-                Thread.sleep(10);
-            }
-            catch (Exception e) {
-                Server.print("Sleep interrupted.");
-                break;
-            }
         }
-
     }
 
     private  void serveCollision(Player p1, Player p2) {
         playersMovementTasks.get(p1).setActive(false);
         playersMovementTasks.get(p2).setActive(false);
 
-        double p1speedcos = p1.getSpeed()*Math.cos(p1.getRotation());
-        double p1speedsin = p1.getSpeed()*Math.sin(p1.getRotation());
-        double p2speedcos = p2.getSpeed()*Math.cos(p2.getRotation());
-        double p2speedsin = p2.getSpeed()*Math.sin(p2.getRotation());
-
         Vector v1 = new Vector(Math.cos(Math.toRadians(p1.getRotation()))*p1.getSpeed(),
-                Math.sin(Math.toRadians(p1.getRotation()))*p1.getSpeed());
+                                Math.sin(Math.toRadians(p1.getRotation()))*p1.getSpeed());
         Vector v2 = new Vector(Math.cos(Math.toRadians(p2.getRotation()))*p2.getSpeed(),
-                Math.sin(Math.toRadians(p2.getRotation()))*p2.getSpeed());
+                                Math.sin(Math.toRadians(p2.getRotation()))*p2.getSpeed());
         Vector v3 = new Vector(p2.getCoords().getX() - p1.getCoords().getX(),
                 p2.getCoords().getY() - p1.getCoords().getY());
 
@@ -104,7 +92,7 @@ public class Game {
         Vector u11 = new Vector(cosa1*(-v1.getX()*cosa1 - v1.getY()*sina1),
                 cosa1*(-v1.getX()*sina1 + v1.getY()*cosa1));
         Vector u12 = new Vector(sina1*(v1.getX()*cosb1 + v1.getY()*sinb1),
-                sina1*(-v1.getX()*sinb1 + v1.getY()*cosb1));
+                            sina1*(-v1.getX()*sinb1 + v1.getY()*cosb1));
 
         //System.out.println("u11: " + u11);
         //System.out.println("u12: " + u12);
@@ -138,12 +126,14 @@ public class Game {
         //System.out.println("newv1: " + newv1);
         //System.out.println("newv2: " + newv2);
 
+        p1.setSpeedXY(newv1);
+        p2.setSpeedXY(newv2);
 
-        p1.setRotation(Math.toDegrees(Math.atan2(newv1.getY(), newv1.getX())));
-        p2.setRotation(Math.toDegrees(Math.atan2(newv2.getY(), newv2.getX())));
+        //p1.setRotation(Math.toDegrees(Math.atan2(newv1.getY(), newv1.getX())));
+        //p2.setRotation(Math.toDegrees(Math.atan2(newv2.getY(), newv2.getX())));
 
-        p1.setSpeed(Math.sqrt(newv1.getX()*newv1.getX()+newv1.getY()*newv1.getY()));
-        p2.setSpeed(Math.sqrt(newv2.getX()*newv2.getX()+newv2.getY()*newv2.getY()));
+        //p1.setSpeed(Math.sqrt(newv1.getX()*newv1.getX()+newv1.getY()*newv1.getY()));
+        //p2.setSpeed(Math.sqrt(newv2.getX()*newv2.getX()+newv2.getY()*newv2.getY()));
 
         //System.out.println(p1);
         //System.out.println(p2);
@@ -151,7 +141,6 @@ public class Game {
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
 
-        while (areColliding(p1, p2)) {}
 
     }
 
@@ -164,7 +153,7 @@ public class Game {
         x = p1x - p2x;
         y = p1y - p2y;
 
-        if (x*x + y*y <= 4*(Game.PLAYER_RADIUS* Game.PLAYER_RADIUS)) {
+        if (x*x + y*y <= COLLISION_TRESHOLD) {
 
             //UWAGAAA
 
@@ -182,7 +171,7 @@ public class Game {
     private void initPlayers() {
         double delta_t = 360.0/players.size();
         double rad;
-        double initRadius = BOARD_RADIUS - PLAYER_RADIUS - 20;
+        double initRadius = BOARD_RADIUS - PLAYER_RADIUS - BOARD_RADIUS/2;
         double x, y;
         Player player;
         for (int i = 0; i < players.size(); i++) {
