@@ -97,7 +97,7 @@ public class MainController implements Initializable {
                             }
                             playersNumber = newPlayersNumber;
                         }
-
+                        //TODO pkt/rundy
                         //System.out.println(player1);
 
 
@@ -133,6 +133,7 @@ public class MainController implements Initializable {
                     for (Player player : game.getPlayers()) {
                         out.writeObject(player);
                     }
+                    //TODO numer rundy/pkt
                     out.flush();
                     byte[] data = bos.toByteArray();
                     server.sendDataToClients(data);
