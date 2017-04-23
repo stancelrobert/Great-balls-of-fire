@@ -2,6 +2,7 @@ package business.game;
 
 
 import business.server.Server;
+import business.util.DaemonThreadFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,11 +29,11 @@ public class Game {
 
     private List<Player> players = new ArrayList<>(MAX_PLAYERS_NUMBER);
     private Map<Player, PlayerMovementTask> playersMovementTasks = new HashMap<>(MAX_PLAYERS_NUMBER);
-    private ExecutorService playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1);
+    private ExecutorService playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1, new DaemonThreadFactory());
 
     public void newRound() {
         playersMovementExecutor.shutdownNow();
-        playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1);
+        playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1, new DaemonThreadFactory());
 
         initPlayers();
 

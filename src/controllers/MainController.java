@@ -6,6 +6,7 @@ import business.game.Player;
 import business.server.ClientInfo;
 import business.server.Server;
 import business.server.ServerEventHandler;
+import business.util.DaemonThreadFactory;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
 import javafx.scene.Parent;
@@ -55,10 +56,11 @@ public class MainController implements Initializable {
     public void initClient() {
         initKeysEvents(stage.getScene());
 
-        Thread displayThread = new Thread(boardController::displayTask);
-        displayThread.start();
+        ExecutorService executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
 
-        Executors.newSingleThreadExecutor().submit(() -> {
+        executor.submit(boardController::displayTask);
+
+        executor.submit(() -> {
             int playersNumber = 0;
             Player[] players = new Player[3];
             byte[] sendData = "Hello".getBytes();
@@ -126,7 +128,7 @@ public class MainController implements Initializable {
 
         server.start();
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
         executor.submit(() -> {
             while(!Thread.interrupted()) {
 

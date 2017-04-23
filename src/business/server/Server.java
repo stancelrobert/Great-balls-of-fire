@@ -1,5 +1,7 @@
 package business.server;
 
+import business.util.DaemonThreadFactory;
+
 import java.io.*;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
@@ -20,7 +22,7 @@ public class Server {
     private int port;
     private int maxClientsNumber;
     private int clientsNumber = 0;
-    private ExecutorService waitForClientsExecutor = Executors.newSingleThreadExecutor();
+    private ExecutorService waitForClientsExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
     private ExecutorService clientsHandlersExecutor;
 
     private int clientPort;
@@ -38,7 +40,7 @@ public class Server {
         this.port = port;
         this.maxClientsNumber = maxClientsNumber;
         this.clientHandlers = new ArrayList<>(maxClientsNumber);
-        this.clientsHandlersExecutor = Executors.newFixedThreadPool(maxClientsNumber);
+        this.clientsHandlersExecutor = Executors.newFixedThreadPool(maxClientsNumber, new DaemonThreadFactory());
     }
 
     public void start() {
