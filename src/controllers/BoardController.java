@@ -12,6 +12,7 @@ import javafx.scene.shape.Circle;
 
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.ResourceBundle;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -52,22 +53,28 @@ public class BoardController {
         Player player;
         PlayerDisplayTask displayTask;
         fpsManager.start();
-        while (true) {
+        while (!Thread.interrupted()) {
             for (int i = 0; i < players.size(); i++) {
                 try {
                     player = players.get(i);
                     displayTask = displayTasks.get(i);
 
-                    displayTask.setpX(player.getCoords().getX()+293);
-                    displayTask.setpY(player.getCoords().getY()+310);
+                    if (player.isActive()) {
+                        displayTask.setActive(true);
+                        displayTask.setpX(player.getCoords().getX()+293);
+                        displayTask.setpY(player.getCoords().getY()+310);
 
-                    displayTask.seteX(player.getCoords().getX()+293+displayTask.getCircle().getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
-                    displayTask.seteY(player.getCoords().getY()+310+displayTask.getCircle().getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+                        displayTask.seteX(player.getCoords().getX()+293+displayTask.getCircle().getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
+                        displayTask.seteY(player.getCoords().getY()+310+displayTask.getCircle().getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+                    }
+                    else {
+                        displayTask.setActive(false);
+                    }
+
                 }
                 catch (IndexOutOfBoundsException e) {
                     System.out.println("Must wait a sec.");
                 }
-
             }
             fpsManager.waitForNextFrame();
         }

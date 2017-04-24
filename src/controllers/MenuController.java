@@ -1,10 +1,22 @@
 package controllers;
 
+import business.game.PlayerDisplayTask;
+import javafx.beans.property.SimpleStringProperty;
 import javafx.event.ActionEvent;
+import javafx.fxml.FXML;
+import javafx.fxml.Initializable;
+import javafx.scene.control.TableColumn;
+import javafx.scene.control.TableView;
 
-public class MenuController {
+import java.net.URL;
+import java.util.ResourceBundle;
+
+public class MenuController implements Initializable {
     private BoardController boardController;
     private MainController mainController;
+    @FXML TableView<PlayerDisplayTask> table;
+    @FXML TableColumn<PlayerDisplayTask, String> playerColumn;
+    @FXML TableColumn<PlayerDisplayTask, Integer> pointsColumn;
 
     public void setBoardController(BoardController boardController) {
         this.boardController = boardController;
@@ -19,8 +31,19 @@ public class MenuController {
         mainController.initNewGame();
     }
 
+
     public void joinGameButtonClicked(ActionEvent actionEvent) {
         mainController.getParent().requestFocus();
         mainController.initClient();
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+//        playerColumn.setCellValueFactory(
+//                p -> new SimpleStringProperty(p.getValue().getFile().getName()));
+//
+//        pointsColumn.setCellValueFactory(
+//                p -> displayTask.getValue().
+//        );
     }
 }

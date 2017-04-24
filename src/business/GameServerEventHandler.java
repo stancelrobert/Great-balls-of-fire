@@ -40,7 +40,7 @@ public class GameServerEventHandler extends ServerEventHandler {
         Player player = new Player();
         game.addPlayer(player);
         playerMovementTasks.put(clientInfo, game.getPlayersMovementTasks().get(player));
-        game.newRound();
+        //game.newRound();
         for (Player p : game.getPlayers()) {
             Server.print("Player: " + p);
         }

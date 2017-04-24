@@ -8,6 +8,8 @@ public class Player implements Serializable {
     private Point coords = new Point();
     private double rotation = 0.0;
     private double speed = 0.0;
+    private boolean active = true;
+    private int points;
 
     private Vector speedXY = new Vector(0.0, 0.0);
     private String color = "#000000";
@@ -54,7 +56,7 @@ public class Player implements Serializable {
 
     @Override
     public String toString() {
-        return this.coords + " " + this.rotation + " " + color;
+        return this.coords + " " + this.rotation + " " + color + this.speedXY.value();
     }
 
     @Override
@@ -78,5 +80,13 @@ public class Player implements Serializable {
 
     public double getSpeedValue() {
         return speedXY.value();
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

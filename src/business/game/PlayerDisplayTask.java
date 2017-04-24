@@ -2,7 +2,9 @@ package business.game;
 
 import business.util.FPSManager;
 import javafx.application.Platform;
+import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
+import javafx.beans.property.SimpleBooleanProperty;
 import javafx.beans.property.SimpleDoubleProperty;
 import javafx.concurrent.Task;
 import javafx.scene.paint.Color;
@@ -24,6 +26,7 @@ public class PlayerDisplayTask extends Task<Void> {
     private DoubleProperty pY = new SimpleDoubleProperty(0.0);
     private DoubleProperty eX = new SimpleDoubleProperty(0.0);
     private DoubleProperty eY = new SimpleDoubleProperty(0.0);
+    private BooleanProperty active = new SimpleBooleanProperty(true);
 
     public Circle getCircle() {
         return circle;
@@ -38,12 +41,15 @@ public class PlayerDisplayTask extends Task<Void> {
         circle.centerXProperty().bind(pX);
         circle.centerYProperty().bind(pY);
         circle.setFill(Color.web(player.getColor()));
+        circle.visibleProperty().bind(active);
+
 
         directionLine.startXProperty().bind(pX);
         directionLine.startYProperty().bind(pY);
 
         directionLine.endXProperty().bind(eX);
         directionLine.endYProperty().bind(eY);
+        directionLine.visibleProperty().bind(active);
     }
 
     @Override
@@ -82,5 +88,9 @@ public class PlayerDisplayTask extends Task<Void> {
 
     public void seteY(double eY) {
         this.eY.set(eY);
+    }
+
+    public void setActive(boolean active) {
+        this.active.set(active);
     }
 }

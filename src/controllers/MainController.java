@@ -86,6 +86,7 @@ public class MainController implements Initializable {
                             players[i].setCoords(player1.getCoords().getX(), player1.getCoords().getY());
                             players[i].setRotation(player1.getRotation());
                             players[i].setSpeed(player1.getSpeed());
+                            players[i].setActive(player1.isActive());
                         }
 
                         if (newPlayersNumber != playersNumber) {
