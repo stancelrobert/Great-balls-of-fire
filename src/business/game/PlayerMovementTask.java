@@ -127,13 +127,11 @@ public class PlayerMovementTask implements Runnable {
         for (int i = 0; i < array.size(); i++) {
             outputWriter.write(array.get(i));
             outputWriter.newLine();
-            if((i + 1) % 3  == 0){
+            if((i + 1) % 4  == 0){
                 outputWriter.write(" ");
                 outputWriter.newLine();
             }
         }
-        outputWriter.newLine();
-        outputWriter.newLine();
         outputWriter.flush();
         outputWriter.close();
     }
@@ -142,10 +140,29 @@ public class PlayerMovementTask implements Runnable {
         String one = String.valueOf(player.getSpeedValue());
         String two = String.valueOf(player.getRotation());
         String three = String.valueOf(player.getCoords());
+        String four = new String("empty");
+        String five = new String();
+
+        if(upPressed){
+            five += "0";
+        }
+        if(downPressed){
+            five += "1";
+        }
+        if(leftPressed){
+            five += "2";
+        }
+        if(rightPressed){
+            five += "3";
+        }
+        if(!(five.isEmpty())){
+            four = five;
+        }
 
         values.add(one);
         values.add(two);
         values.add(three);
+        values.add(four);
 
         return values;
     }
