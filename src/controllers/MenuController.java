@@ -61,4 +61,9 @@ public class MenuController implements Initializable {
 
 
     }
+
+    public void addBotButtonClicked(ActionEvent actionEvent) {
+        mainController.getParent().requestFocus();
+        mainController.addBot();
+    }
 }

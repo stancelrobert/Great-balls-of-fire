@@ -28,6 +28,7 @@ public class Game {
     private List<Player> activaPlayers = new ArrayList<>(MAX_PLAYERS_NUMBER);
     private Map<Player, PlayerMovementTask> playersMovementTasks = new HashMap<>(MAX_PLAYERS_NUMBER);
     private ExecutorService executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
+    private ExecutorService botMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER, new DaemonThreadFactory());
     private int roundNumber = 0;
 
 
@@ -151,23 +152,24 @@ public class Game {
 
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
-        playersMovementTasks.get(p1).setControllable(true);
-        playersMovementTasks.get(p2).setControllable(true);
-
         int j = 0;
         while (areColliding(p1, p2)) {
             j++;
             playersMovementTasks.get(p1).run();
             playersMovementTasks.get(p2).run();
-            Server.print("elomelo");
+            Server.print("elomelo" + v3);
             if (j > 10) {
                 //v3.scale(10);
                 p1.setSpeedXY(new Vector(v3));
                 v3.rotate(Math.PI);
                 p2.setSpeedXY(new Vector(v3));
+                v3.rotate(Math.PI);
                 j = 0;
             }
         }
+
+        playersMovementTasks.get(p1).setControllable(true);
+        playersMovementTasks.get(p2).setControllable(true);
 
 
 
@@ -214,6 +216,7 @@ public class Game {
             y = initRadius*Math.cos(rad);
             player = players.get(i);
             player.setCoords(x, y);
+            player.getSpeedXY().setLocation(0, 0);
             player.setRotation(Math.atan2(y,x) - Math.atan2(0,initRadius));
             player.setColor(COLORS[i]);
             player.setActive(true);
@@ -247,4 +250,31 @@ public class Game {
     public void setActivaPlayers(List<Player> activaPlayers) {
         this.activaPlayers = activaPlayers;
     }
+
+    public void addBot() {
+        Player bot = new Player();
+        PlayerMovementTask movementTask = new PlayerMovementTask(bot, this);
+        bot.setColor(COLORS[players.size()]);
+        players.add(bot);
+        playersMovementTasks.put(bot, movementTask);
+        botMovementExecutor.submit(() -> {
+            Random rand = new Random();
+            while (!Thread.interrupted()) {
+                movementTask.setUpPressed(rand.nextBoolean());
+                movementTask.setDownPressed(rand.nextBoolean());
+                movementTask.setLeftPressed(rand.nextBoolean());
+                movementTask.setRightPressed(rand.nextBoolean());
+
+                try {
+                    Thread.sleep(400);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+        });
+        newRound();
+    }
+
 }

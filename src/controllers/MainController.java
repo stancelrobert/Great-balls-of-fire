@@ -31,12 +31,19 @@ public class MainController implements Initializable {
     DatagramSocket clientSocket;
     ClientInfo clientInfo;
 
+    Game game;
+
     @Override
     public void initialize(URL location, ResourceBundle resources) {
         menuController.setBoardController(boardController);
         menuController.setMainController(this);
 
         boardController.setMainController(this);
+    }
+
+    public void addBot() {
+        game.addBot();
+
     }
 
     /**
@@ -122,7 +129,7 @@ public class MainController implements Initializable {
     }
 
     public void initNewGame() {
-        Game game = new Game();
+        game = new Game();
         Server server = new Server(4000, 3);
         ServerEventHandler serverEventHandler = new GameServerEventHandler(game);
 
