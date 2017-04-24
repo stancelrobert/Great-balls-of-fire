@@ -37,9 +37,10 @@ public class Game {
         roundNumber++;
 
         initPlayers();
-
-        executor.submit(this::collision);
-        executor.submit(this::movementTask);
+        if (players.size() > 1) {
+            executor.submit(this::collision);
+            executor.submit(this::movementTask);
+        }
 
 //        for (Map.Entry<Player, PlayerMovementTask> entry : playersMovementTasks.entrySet()) {
 //            playersMovementExecutor.submit(entry.getValue());
@@ -48,12 +49,19 @@ public class Game {
     }
 
     private void movementTask() {
-        
+
+        try {
+            Thread.sleep(1500);
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+
         Server.print("Movement task activated.");
         Player player, player2;
         PlayerMovementTask movementTask;
         Iterator<Player> iterator;
-        while (activaPlayers.size() > 0 && !Thread.interrupted()) {
+        while (activaPlayers.size() > 1 && !Thread.interrupted()) {
             iterator = activaPlayers.iterator();
             while (iterator.hasNext()) {
                 try {
@@ -142,9 +150,19 @@ public class Game {
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
 
+        int j = 0;
         while (areColliding(p1, p2)) {
+            j++;
             playersMovementTasks.get(p1).run();
             playersMovementTasks.get(p2).run();
+            Server.print("elomelo");
+            if (j > 5) {
+                //v3.scale(10);
+                p1.setSpeedXY(new Vector(v3));
+                v3.rotate(Math.PI);
+                p2.setSpeedXY(new Vector(v3));
+                j = 0;
+            }
         }
 
         playersMovementTasks.get(p1).setControllable(true);
