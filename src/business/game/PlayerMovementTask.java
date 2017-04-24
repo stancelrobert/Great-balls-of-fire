@@ -127,6 +127,10 @@ public class PlayerMovementTask implements Runnable {
         for (int i = 0; i < array.size(); i++) {
             outputWriter.write(array.get(i));
             outputWriter.newLine();
+            if((i + 1) % 3  == 0){
+                outputWriter.write(" ");
+                outputWriter.newLine();
+            }
         }
         outputWriter.newLine();
         outputWriter.newLine();
