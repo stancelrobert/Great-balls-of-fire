@@ -18,9 +18,9 @@
     <center>
         <TableView fx:id="table">
             <columns>
-                <TableColumn fx:id="playerColumn" prefWidth="500" text="Image">
+                <TableColumn fx:id="playerColumn" prefWidth="80" text="Player">
                 </TableColumn>
-                <TableColumn fx:id="pointsColumn" prefWidth="150" text="Progress">
+                <TableColumn fx:id="pointsColumn" prefWidth="80" text="Points">
                 </TableColumn>
             </columns>
         </TableView>

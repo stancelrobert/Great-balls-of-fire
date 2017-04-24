@@ -100,6 +100,7 @@ public class PlayerMovementTask implements Runnable {
             else {
                 player.getSpeedXY().setLocation(0.0, 0.0);
                 player.setSpeed(0.0);
+                player.setPoints(player.getPoints()-1);
                 player.setActive(false);
             }
     }

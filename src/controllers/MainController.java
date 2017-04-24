@@ -87,6 +87,7 @@ public class MainController implements Initializable {
                             players[i].setRotation(player1.getRotation());
                             players[i].setSpeed(player1.getSpeed());
                             players[i].setActive(player1.isActive());
+                            players[i].setPoints(player1.getPoints());
                         }
 
                         if (newPlayersNumber != playersNumber) {
@@ -214,5 +215,9 @@ public class MainController implements Initializable {
 
     public Parent getParent() {
         return this.parent;
+    }
+
+    public BoardController getBoardController() {
+        return boardController;
     }
 }

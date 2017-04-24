@@ -9,7 +9,7 @@ public class Player implements Serializable {
     private double rotation = 0.0;
     private double speed = 0.0;
     private boolean active = true;
-    private int points;
+    private int points = 0;
 
     private Vector speedXY = new Vector(0.0, 0.0);
     private String color = "#000000";
@@ -88,5 +88,13 @@ public class Player implements Serializable {
 
     public void setActive(boolean active) {
         this.active = active;
+    }
+
+    public int getPoints() {
+        return points;
+    }
+
+    public void setPoints(int points) {
+        this.points = points;
     }
 }

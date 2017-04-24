@@ -50,12 +50,12 @@ public class Game {
 
     private void movementTask() {
 
-        try {
-            Thread.sleep(1500);
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            Thread.sleep(1500);
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         Server.print("Movement task activated.");
         Player player, player2;
@@ -105,6 +105,8 @@ public class Game {
                 }
             }
         }
+
+        Server.print("Collision method ended.");
     }
 
     public synchronized void serveCollision(Player p1, Player p2) {
@@ -149,6 +151,8 @@ public class Game {
 
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
+        playersMovementTasks.get(p1).setControllable(true);
+        playersMovementTasks.get(p2).setControllable(true);
 
         int j = 0;
         while (areColliding(p1, p2)) {
@@ -156,7 +160,7 @@ public class Game {
             playersMovementTasks.get(p1).run();
             playersMovementTasks.get(p2).run();
             Server.print("elomelo");
-            if (j > 5) {
+            if (j > 10) {
                 //v3.scale(10);
                 p1.setSpeedXY(new Vector(v3));
                 v3.rotate(Math.PI);
@@ -165,8 +169,6 @@ public class Game {
             }
         }
 
-        playersMovementTasks.get(p1).setControllable(true);
-        playersMovementTasks.get(p2).setControllable(true);
 
 
     }

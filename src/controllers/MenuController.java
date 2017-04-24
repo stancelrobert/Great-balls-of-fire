@@ -1,7 +1,9 @@
 package controllers;
 
 import business.game.PlayerDisplayTask;
+import javafx.beans.property.IntegerProperty;
 import javafx.beans.property.SimpleStringProperty;
+import javafx.beans.value.ObservableValue;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -29,12 +31,15 @@ public class MenuController implements Initializable {
     public void newGameButtonClicked(ActionEvent actionEvent) {
         mainController.getParent().requestFocus();
         mainController.initNewGame();
+
     }
 
 
     public void joinGameButtonClicked(ActionEvent actionEvent) {
         mainController.getParent().requestFocus();
         mainController.initClient();
+
+        table.setItems(mainController.getBoardController().getDisplayTasks());
     }
 
     @Override
@@ -45,5 +50,15 @@ public class MenuController implements Initializable {
 //        pointsColumn.setCellValueFactory(
 //                p -> displayTask.getValue().
 //        );
+
+        playerColumn.setCellValueFactory(
+                p -> p.getValue().playerNameProperty()
+        );
+
+        pointsColumn.setCellValueFactory(
+                p -> p.getValue().playerPointsProperty().asObject()
+        );
+
+
     }
 }

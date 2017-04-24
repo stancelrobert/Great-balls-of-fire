@@ -2,10 +2,12 @@ package business.game;
 
 import business.util.FPSManager;
 import javafx.application.Platform;
-import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
-import javafx.beans.property.SimpleBooleanProperty;
-import javafx.beans.property.SimpleDoubleProperty;
+import javafx.beans.InvalidationListener;
+import javafx.beans.Observable;
+import javafx.beans.property.*;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableIntegerValue;
+import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
@@ -27,6 +29,8 @@ public class PlayerDisplayTask extends Task<Void> {
     private DoubleProperty eX = new SimpleDoubleProperty(0.0);
     private DoubleProperty eY = new SimpleDoubleProperty(0.0);
     private BooleanProperty active = new SimpleBooleanProperty(true);
+    private StringProperty playerName = new SimpleStringProperty();
+    private IntegerProperty playerPoints = new SimpleIntegerProperty();
 
     public Circle getCircle() {
         return circle;
@@ -38,10 +42,15 @@ public class PlayerDisplayTask extends Task<Void> {
 
     public PlayerDisplayTask(Player player) {
         this.player = player;
+        playerName.set(player.getColor());
+        playerPoints.set(player.getPoints());
+
         circle.centerXProperty().bind(pX);
         circle.centerYProperty().bind(pY);
         circle.setFill(Color.web(player.getColor()));
         circle.visibleProperty().bind(active);
+
+
 
 
         directionLine.startXProperty().bind(pX);
@@ -92,5 +101,25 @@ public class PlayerDisplayTask extends Task<Void> {
 
     public void setActive(boolean active) {
         this.active.set(active);
+    }
+
+    public String getPlayerName() {
+        return playerName.get();
+    }
+
+    public StringProperty playerNameProperty() {
+        return playerName;
+    }
+
+    public int getPlayerPoints() {
+        return playerPoints.get();
+    }
+
+    public IntegerProperty playerPointsProperty() {
+        return playerPoints;
+    }
+
+    public void setPlayerPoints(int playerPoints) {
+        this.playerPoints.set(playerPoints);
     }
 }
