@@ -2,11 +2,9 @@ package business.game;
 
 
 import business.server.Server;
+import business.util.DaemonThreadFactory;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
@@ -27,21 +25,67 @@ public class Game {
     private static final double COLLISION_TRESHOLD = 4*PLAYER_RADIUS*PLAYER_RADIUS;
 
     private List<Player> players = new ArrayList<>(MAX_PLAYERS_NUMBER);
+    private List<Player> activaPlayers = new ArrayList<>(MAX_PLAYERS_NUMBER);
     private Map<Player, PlayerMovementTask> playersMovementTasks = new HashMap<>(MAX_PLAYERS_NUMBER);
-    private ExecutorService playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1);
+    private ExecutorService executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
+    private int roundNumber = 0;
+
 
     public void newRound() {
-        playersMovementExecutor.shutdownNow();
-        playersMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER+1);
+        executor.shutdownNow();
+        executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
+        roundNumber++;
 
         initPlayers();
+        if (players.size() > 1) {
+            executor.submit(this::collision);
+            executor.submit(this::movementTask);
+        }
 
-        playersMovementExecutor.submit(this::collision);
+//        for (Map.Entry<Player, PlayerMovementTask> entry : playersMovementTasks.entrySet()) {
+//            playersMovementExecutor.submit(entry.getValue());
+//        }
 
-        for (Map.Entry<Player, PlayerMovementTask> entry : playersMovementTasks.entrySet()) {
-            playersMovementExecutor.submit(entry.getValue());
+    }
+
+    private void movementTask() {
+
+//        try {
+//            Thread.sleep(1500);
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
+
+        Server.print("Movement task activated.");
+        Player player, player2;
+        PlayerMovementTask movementTask;
+        Iterator<Player> iterator;
+        while (activaPlayers.size() > 1 && !Thread.interrupted()) {
+            iterator = activaPlayers.iterator();
+            while (iterator.hasNext()) {
+                try {
+                    player = iterator.next();
+                    movementTask = playersMovementTasks.get(player);
+                    if (player.isActive()) {
+                        movementTask.run();
+                    }
+                    else {
+                        iterator.remove();
+                    }
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        Server.print("Movement task ended.");
+        if (!Thread.interrupted()) {
+            newRound();
         }
     }
+
 
     private void collision() {
         Server.print("Collision method activated.");
@@ -55,15 +99,17 @@ public class Game {
 
                     if (areColliding(p1, p2)) {
                         Server.print("Serving collision.");
-                        serveCollision2(p1, p2);
+                        serveCollision(p1, p2);
                         Server.print("Collision served.");
                     }
                 }
             }
         }
+
+        Server.print("Collision method ended.");
     }
 
-    private void serveCollision2(Player p1, Player p2) {
+    public synchronized void serveCollision(Player p1, Player p2) {
         playersMovementTasks.get(p1).setActive(false);
         playersMovementTasks.get(p2).setActive(false);
         playersMovementTasks.get(p1).setControllable(false);
@@ -105,103 +151,33 @@ public class Game {
 
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
-
-        while (areColliding(p1, p2));
-
         playersMovementTasks.get(p1).setControllable(true);
         playersMovementTasks.get(p2).setControllable(true);
+
+        int j = 0;
+        while (areColliding(p1, p2)) {
+            j++;
+            playersMovementTasks.get(p1).run();
+            playersMovementTasks.get(p2).run();
+            Server.print("elomelo");
+            if (j > 10) {
+                //v3.scale(10);
+                p1.setSpeedXY(new Vector(v3));
+                v3.rotate(Math.PI);
+                p2.setSpeedXY(new Vector(v3));
+                j = 0;
+            }
+        }
+
 
 
     }
 
-    private  void serveCollision(Player p1, Player p2) {
-        playersMovementTasks.get(p1).setActive(false);
-        playersMovementTasks.get(p2).setActive(false);
-        playersMovementTasks.get(p1).setControllable(false);
-        playersMovementTasks.get(p2).setControllable(false);
+    public boolean areColliding(Player p1, Player p2) {
+        if (p1 == p2) {
+            return false;
+        }
 
-        Vector v1 = new Vector(Math.cos(Math.toRadians(p1.getRotation()))*p1.getSpeed(),
-                                Math.sin(Math.toRadians(p1.getRotation()))*p1.getSpeed());
-        Vector v2 = new Vector(Math.cos(Math.toRadians(p2.getRotation()))*p2.getSpeed(),
-                                Math.sin(Math.toRadians(p2.getRotation()))*p2.getSpeed());
-        Vector v3 = new Vector(p2.getCoords().getX() - p1.getCoords().getX(),
-                p2.getCoords().getY() - p1.getCoords().getY());
-
-        //System.out.println("v1: " + v1);
-        //System.out.println("v3: " + v3);
-
-        double b1 = Math.atan2(v1.getY(), v1.getX()) - Math.atan2(v3.getY(), v3.getX());
-        double a1 = 3.1415/2.0 - b1;
-
-
-
-        //System.out.println("a1 b1: " + Math.toDegrees(a1) + " " + Math.toDegrees(b1));
-
-        double cosa1 = Math.cos(a1);
-        double sina1 = Math.sin(a1);
-        double cosb1 = Math.cos(b1);
-        double sinb1 = Math.sin(b1);
-
-        Vector u11 = new Vector(cosa1*(-v1.getX()*cosa1 - v1.getY()*sina1),
-                cosa1*(-v1.getX()*sina1 + v1.getY()*cosa1));
-        Vector u12 = new Vector(sina1*(v1.getX()*cosb1 + v1.getY()*sinb1),
-                            sina1*(-v1.getX()*sinb1 + v1.getY()*cosb1));
-
-        //System.out.println("u11: " + u11);
-        //System.out.println("u12: " + u12);
-
-        v3.setLocation(-v3.getX(), -v3.getY());
-
-        //System.out.println("v2: " + v2);
-        //System.out.println("v3: " + v3);
-
-        double b2 = Math.atan2(v2.getY(), v2.getX()) - Math.atan2(v3.getY(), v3.getX());
-        double a2 = 3.1415/2 - b2;
-
-        //System.out.println("a2 + b2: " + Math.toDegrees(a2) + " " + Math.toDegrees(b2));
-
-        double cosa2 = Math.cos(a2);
-        double sina2 = Math.sin(a2);
-        double cosb2 = Math.cos(b2);
-        double sinb2 = Math.sin(b2);
-
-        Vector u21 = new Vector(cosa2*(v2.getX()*cosa2 + v2.getY()*sina2),
-                cosa2*(v2.getX()*sina2 - v2.getY()*cosa2));
-        Vector u22 = new Vector(sina2*(v2.getX()*cosb2 + v2.getY()*sinb2),
-                sina2*(-v2.getX()*sinb2 + v2.getY()*cosb2));
-
-        //System.out.println("u21: " + u21);
-        //System.out.println("u22: " + u22);
-
-        Vector newv1 = new Vector(u11.getX()+u22.getX(), u11.getY()+u22.getY());
-        Vector newv2 = new Vector(u12.getX()+u21.getX(), u12.getY()+u21.getY());
-
-        //System.out.println("newv1: " + newv1);
-        //System.out.println("newv2: " + newv2);
-
-        p1.setSpeedXY(newv1);
-        p2.setSpeedXY(newv2);
-
-        //p1.setRotation(Math.toDegrees(Math.atan2(newv1.getY(), newv1.getX())));
-        //p2.setRotation(Math.toDegrees(Math.atan2(newv2.getY(), newv2.getX())));
-
-        //p1.setSpeed(Math.sqrt(newv1.getX()*newv1.getX()+newv1.getY()*newv1.getY()));
-        //p2.setSpeed(Math.sqrt(newv2.getX()*newv2.getX()+newv2.getY()*newv2.getY()));
-
-        //System.out.println(p1);
-        //System.out.println(p2);
-
-        playersMovementTasks.get(p1).setActive(true);
-        playersMovementTasks.get(p2).setActive(true);
-
-        while (areColliding(p1, p2));
-
-        playersMovementTasks.get(p1).setControllable(true);
-        playersMovementTasks.get(p2).setControllable(true);
-
-    }
-
-    private boolean areColliding(Player p1, Player p2) {
         double p1x, p1y, p2x, p2y, x, y;
         p1x = p1.getCoords().getX();
         p1y = p1.getCoords().getY();
@@ -214,7 +190,9 @@ public class Game {
             //UWAGAAA
             //Jak odkomentujecie printa to kolizja zaczyna coś działać XDDDDDD
 
-            Server.print("");//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
+            //Server.print((x*x + y*y) + " < " + COLLISION_TRESHOLD);//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
+            //Server.print(p1);
+            //Server.print(p2);
             return true;
         }
         else {
@@ -224,6 +202,7 @@ public class Game {
     }
 
     private void initPlayers() {
+        activaPlayers.clear();
         double delta_t = 360.0/players.size();
         double rad;
         double initRadius = BOARD_RADIUS - PLAYER_RADIUS - BOARD_RADIUS/2;
@@ -237,13 +216,15 @@ public class Game {
             player.setCoords(x, y);
             player.setRotation(Math.atan2(y,x) - Math.atan2(0,initRadius));
             player.setColor(COLORS[i]);
+            player.setActive(true);
+            activaPlayers.add(player);
         }
     }
 
     public void addPlayer(Player player) {
         player.setColor(COLORS[players.size()]);
         players.add(player);
-        playersMovementTasks.put(player, new PlayerMovementTask(player));
+        playersMovementTasks.put(player, new PlayerMovementTask(player, this));
         newRound();
     }
 
@@ -253,5 +234,17 @@ public class Game {
 
     public Map<Player, PlayerMovementTask> getPlayersMovementTasks() {
         return playersMovementTasks;
+    }
+
+    public void setPlayers(List<Player> players) {
+        this.players = players;
+    }
+
+    public List<Player> getActivaPlayers() {
+        return activaPlayers;
+    }
+
+    public void setActivaPlayers(List<Player> activaPlayers) {
+        this.activaPlayers = activaPlayers;
     }
 }

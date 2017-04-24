@@ -12,6 +12,10 @@ public class Vector extends Point implements Serializable {
         super(x, y);
     }
 
+    public Vector(Vector vector) {
+        super(vector.getX(), vector.getY());
+    }
+
     @Override
     public String toString() {
         String s = super.toString();

@@ -6,8 +6,10 @@ import business.game.Player;
 import business.server.ClientInfo;
 import business.server.Server;
 import business.server.ServerEventHandler;
+import business.util.DaemonThreadFactory;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
+import javafx.scene.Parent;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
 
@@ -23,6 +25,7 @@ public class MainController implements Initializable {
     @FXML private MenuController menuController;
 
     private Stage stage;
+    private Parent parent;
 
     private byte[] bytes = new byte[4];
     DatagramSocket clientSocket;
@@ -53,17 +56,18 @@ public class MainController implements Initializable {
     public void initClient() {
         initKeysEvents(stage.getScene());
 
-        Thread displayThread = new Thread(boardController::displayTask);
-        displayThread.start();
+        ExecutorService executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
 
-        Executors.newSingleThreadExecutor().submit(() -> {
+        executor.submit(boardController::displayTask);
+
+        executor.submit(() -> {
             int playersNumber = 0;
             Player[] players = new Player[3];
             byte[] sendData = "Hello".getBytes();
             byte[] receiveData = new byte[1024];
             try {
                 clientSocket = new DatagramSocket();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("127.0.0.1"), 4000);
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("localhost"), 4000);
                 clientSocket.send(sendPacket);
 
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
@@ -82,6 +86,8 @@ public class MainController implements Initializable {
                             players[i].setCoords(player1.getCoords().getX(), player1.getCoords().getY());
                             players[i].setRotation(player1.getRotation());
                             players[i].setSpeed(player1.getSpeed());
+                            players[i].setActive(player1.isActive());
+                            players[i].setPoints(player1.getPoints());
                         }
 
                         if (newPlayersNumber != playersNumber) {
@@ -97,7 +103,9 @@ public class MainController implements Initializable {
                             }
                             playersNumber = newPlayersNumber;
                         }
-                        //TODO pkt/rundy
+
+
+
                         //System.out.println(player1);
 
 
@@ -122,7 +130,7 @@ public class MainController implements Initializable {
 
         server.start();
 
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
         executor.submit(() -> {
             while(!Thread.interrupted()) {
 
@@ -133,7 +141,10 @@ public class MainController implements Initializable {
                     for (Player player : game.getPlayers()) {
                         out.writeObject(player);
                     }
-                    //TODO numer rundy/pkt
+
+
+
+
                     out.flush();
                     byte[] data = bos.toByteArray();
                     server.sendDataToClients(data);
@@ -196,5 +207,17 @@ public class MainController implements Initializable {
             e.printStackTrace();
         }
 
+    }
+
+    public void setParent(Parent parent) {
+        this.parent = parent;
+    }
+
+    public Parent getParent() {
+        return this.parent;
+    }
+
+    public BoardController getBoardController() {
+        return boardController;
     }
 }
