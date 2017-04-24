@@ -48,6 +48,7 @@ public class Game {
     }
 
     private void movementTask() {
+        
         Server.print("Movement task activated.");
         Player player, player2;
         PlayerMovementTask movementTask;
