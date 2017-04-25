@@ -35,7 +35,6 @@ public class PlayerMovementTask implements Runnable {
     private double delta_angle;
     private long lastTime = System.nanoTime();
 
-    public List<String> values = new ArrayList<>();
     @Override
     public void run() {
         //lastTime = System.nanoTime();
@@ -46,6 +45,7 @@ public class PlayerMovementTask implements Runnable {
          */
         //-------------------------------- MOJE
         if(timer < currTime - 100000000.0) {
+            List<String> values = new ArrayList<>();
             getInfo(values, "info.txt");
             timer = currTime;
         }
@@ -123,11 +123,11 @@ public class PlayerMovementTask implements Runnable {
 
     public static void appendToFile (String filename, List<String> array) throws IOException{
         BufferedWriter outputWriter = null;
-        outputWriter = new BufferedWriter(new FileWriter(filename));
+        outputWriter = new BufferedWriter(new FileWriter(filename, true));
         for (int i = 0; i < array.size(); i++) {
             outputWriter.write(array.get(i));
             outputWriter.newLine();
-            if((i + 1) % 4  == 0){
+            if((i + 1) % 5  == 0){
                 outputWriter.write(" ");
                 outputWriter.newLine();
             }
@@ -142,6 +142,7 @@ public class PlayerMovementTask implements Runnable {
         String three = String.valueOf(player.getCoords());
         String four = new String("empty");
         String five = new String();
+        String six = String.valueOf(player.getColor());
 
         if(upPressed){
             five += "0";
@@ -163,6 +164,7 @@ public class PlayerMovementTask implements Runnable {
         values.add(two);
         values.add(three);
         values.add(four);
+        values.add(six);
 
         return values;
     }

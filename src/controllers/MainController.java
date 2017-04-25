@@ -67,7 +67,7 @@ public class MainController implements Initializable {
             byte[] receiveData = new byte[1024];
             try {
                 clientSocket = new DatagramSocket();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("localhost"), 4000);
+                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("42.0.167.226"), 4000);
                 clientSocket.send(sendPacket);
 
                 DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
