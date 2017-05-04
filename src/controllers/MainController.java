@@ -28,8 +28,10 @@ public class MainController implements Initializable {
     private Parent parent;
 
     private byte[] bytes = new byte[4];
-    DatagramSocket clientSocket;
-    ClientInfo clientInfo;
+
+    private DatagramSocket clientSocket;
+    private ClientInfo clientInfo;
+    private Game game;
 
     @Override
     public void initialize(URL location, ResourceBundle resources) {
@@ -37,6 +39,11 @@ public class MainController implements Initializable {
         menuController.setMainController(this);
 
         boardController.setMainController(this);
+    }
+
+    public void addBot() {
+        game.addBot();
+
     }
 
     /**
@@ -65,12 +72,16 @@ public class MainController implements Initializable {
             Player[] players = new Player[3];
             byte[] sendData = "Hello".getBytes();
             byte[] receiveData = new byte[1024];
+            DatagramPacket sendPacket;
+            DatagramPacket receivePacket;
+
             try {
+                sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("localhost"), 4000);
+                receivePacket = new DatagramPacket(receiveData, receiveData.length);
+
                 clientSocket = new DatagramSocket();
-                DatagramPacket sendPacket = new DatagramPacket(sendData, sendData.length, InetAddress.getByName("localhost"), 4000);
                 clientSocket.send(sendPacket);
 
-                DatagramPacket receivePacket = new DatagramPacket(receiveData, receiveData.length);
                 clientSocket.receive(receivePacket);
                 clientInfo = new ClientInfo(receivePacket.getAddress(), receivePacket.getPort());
 
@@ -80,18 +91,17 @@ public class MainController implements Initializable {
 
                     try (ByteArrayInputStream bis = new ByteArrayInputStream(receivePacket.getData());
                             ObjectInput in = new ObjectInputStream(bis)) {
+
                         int newPlayersNumber = in.readInt();
+
                         for (int i = 0; i < playersNumber; i++) {
-                            Player player1 = (Player)in.readObject();
-                            players[i].setCoords(player1.getCoords().getX(), player1.getCoords().getY());
-                            players[i].setRotation(player1.getRotation());
-                            players[i].setSpeed(player1.getSpeed());
-                            players[i].setActive(player1.isActive());
-                            players[i].setPoints(player1.getPoints());
+                            players[i].setAll((Player)in.readObject());
+                            if (!players[i].isActive()) {
+                                //System.out.println(i + "th player is not active");
+                            }
                         }
 
                         if (newPlayersNumber != playersNumber) {
-                            System.out.println(newPlayersNumber);
                             if (newPlayersNumber > playersNumber) {
                                 for (int i = playersNumber; i < newPlayersNumber; i++) {
                                     players[i] = (Player)in.readObject();
@@ -103,12 +113,6 @@ public class MainController implements Initializable {
                             }
                             playersNumber = newPlayersNumber;
                         }
-
-
-
-                        //System.out.println(player1);
-
-
                     }
                     catch (Exception e) {
                         e.printStackTrace();
@@ -122,7 +126,7 @@ public class MainController implements Initializable {
     }
 
     public void initNewGame() {
-        Game game = new Game();
+        game = new Game();
         Server server = new Server(4000, 3);
         ServerEventHandler serverEventHandler = new GameServerEventHandler(game);
 
@@ -138,11 +142,12 @@ public class MainController implements Initializable {
                 try (ByteArrayOutputStream bos = new ByteArrayOutputStream();
                      ObjectOutput out = new ObjectOutputStream(bos)) {
                     out.writeInt(game.getPlayers().size());
-                    for (Player player : game.getPlayers()) {
-                        out.writeObject(player);
+                    for (int i = 0; i < game.getPlayers().size(); i++) {
+                        out.writeObject(game.getPlayers().get(i));
+                        if (!game.getPlayers().get(i).isActive()) {
+                            //Server.print(i + "th player is not active");
+                        }
                     }
-
-
 
 
                     out.flush();

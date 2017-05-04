@@ -1,5 +1,8 @@
 package business.game;
 
+import business.server.Server;
+import org.mapdb.elsa.ElsaSerializerBase;
+
 import java.util.List;
 
 /**
@@ -29,6 +32,12 @@ public class PlayerMovementTask implements Runnable {
     private double delta_v;
     private double delta_angle;
     private long lastTime = System.nanoTime();
+
+
+    public void prepare() {
+        lastTime = System.nanoTime();
+    }
+
     @Override
     public void run() {
         //lastTime = System.nanoTime();
@@ -42,18 +51,15 @@ public class PlayerMovementTask implements Runnable {
             if (upPressed && player.getSpeedValue() < Game.MAX_SPEED && controllable) {
                 delta_v = (Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
                 player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
-                //player.setSpeed(player.getSpeed() + (Game.ACCELERATION - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
             }
             else if (downPressed && player.getSpeedValue() < Game.MAX_SPEED && controllable) {
                 delta_v = -(Game.ACCELERATION - Game.PASSIVE_ACCELERATION) * delta_t;
                 player.getSpeedXY().add(Math.cos(Math.toRadians(player.getRotation()))*delta_v, Math.sin(Math.toRadians(player.getRotation()))*delta_v);
-                //player.setSpeed(player.getSpeed() - (Game.ACCELERATION + Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION) * delta_t);
             }
             else if (player.getSpeedValue() != 0) {
                 delta_v = - Game.PASSIVE_ACCELERATION * delta_t;
                 if (player.getSpeedValue() > delta_v) {
                     player.getSpeedXY().add(delta_v);
-                    //player.setSpeed(player.getSpeed() - Math.signum(player.getSpeed()) * Game.PASSIVE_ACCELERATION * delta_t);
                 }
                 else {
                     player.getSpeedXY().setLocation(0.0, 0.0);
@@ -71,15 +77,9 @@ public class PlayerMovementTask implements Runnable {
                 player.setRotation((player.getRotation() + delta_angle));
             }
 
-            /*
-                perform movement
-             */
-//                move(player.getCoords().getX()+Math.cos(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t,
-//                        player.getCoords().getY()+Math.sin(Math.toRadians(player.getRotation())) * player.getSpeed() * delta_t);
+            move(player.getCoords().getX()+player.getSpeedXY().getX()*delta_t,
+                    player.getCoords().getY()+player.getSpeedXY().getY()*delta_t);
 
-
-                move(player.getCoords().getX()+player.getSpeedXY().getX()*delta_t,
-                        player.getCoords().getY()+player.getSpeedXY().getY()*delta_t);
 
         }
 
@@ -99,16 +99,11 @@ public class PlayerMovementTask implements Runnable {
             }
             else {
                 player.getSpeedXY().setLocation(0.0, 0.0);
-                player.setSpeed(0.0);
                 player.setPoints(player.getPoints()-1);
                 player.setActive(false);
             }
-    }
 
-    public Player getPlayer() {
-        return player;
     }
-
 
     public void setUpPressed(boolean upPressed) {
         this.upPressed = upPressed;
@@ -124,6 +119,22 @@ public class PlayerMovementTask implements Runnable {
 
     public void setLeftPressed(boolean leftPressed) {
         this.leftPressed = leftPressed;
+    }
+
+    public boolean isUpPressed() {
+        return upPressed;
+    }
+
+    public boolean isDownPressed() {
+        return downPressed;
+    }
+
+    public boolean isRightPressed() {
+        return rightPressed;
+    }
+
+    public boolean isLeftPressed() {
+        return leftPressed;
     }
 
     public void setActive(boolean active) {

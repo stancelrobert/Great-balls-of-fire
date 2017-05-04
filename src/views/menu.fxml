@@ -30,6 +30,7 @@
         <FlowPane hgap="4" vgap="4">
             <Button text="Nowa gra" onAction="#newGameButtonClicked"/>
             <Button text="Dołącz do gry" onAction="#joinGameButtonClicked"/>
+            <Button text="Dodaj bota" onAction="#addBotButtonClicked"/>
         </FlowPane>
     </bottom>
 </BorderPane>

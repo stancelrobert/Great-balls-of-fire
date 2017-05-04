@@ -3,10 +3,28 @@ package business.game;
 
 import business.server.Server;
 import business.util.DaemonThreadFactory;
+import com.google.common.collect.Lists;
+import org.bytedeco.javacv.FrameFilter;
+import org.deeplearning4j.nn.multilayer.MultiLayerNetwork;
+import org.deeplearning4j.util.ModelSerializer;
+import org.mapdb.elsa.ElsaSerializerBase;
+import org.nd4j.linalg.api.ndarray.INDArray;
+import org.nd4j.linalg.cpu.nativecpu.NDArray;
+import org.nd4j.linalg.dataset.DataSet;
+import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
+import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Created by Robert on 03.04.2017.
@@ -25,50 +43,67 @@ public class Game {
     private static final double COLLISION_TRESHOLD = 4*PLAYER_RADIUS*PLAYER_RADIUS;
 
     private List<Player> players = new ArrayList<>(MAX_PLAYERS_NUMBER);
-    private List<Player> activaPlayers = new ArrayList<>(MAX_PLAYERS_NUMBER);
+    private List<Player> activePlayers = new ArrayList<>(MAX_PLAYERS_NUMBER);
     private Map<Player, PlayerMovementTask> playersMovementTasks = new HashMap<>(MAX_PLAYERS_NUMBER);
-    private ExecutorService executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
+    private ExecutorService newRoundExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
+    private ExecutorService movementTaskExecutor = Executors.newSingleThreadExecutor(new DaemonThreadFactory());
+    private ExecutorService botMovementExecutor = Executors.newFixedThreadPool(MAX_PLAYERS_NUMBER, new DaemonThreadFactory());
     private int roundNumber = 0;
+    private GameDataSetGenerator dataSetGenerator = new GameDataSetGenerator(players);
+    private MultiLayerNetwork model = null;
+    private DataNormalization normalizer = null;
+    private boolean endRound = false;
+    private boolean movementTaskRunning = false;
+
+    public Game() {
+        try {
+            //model = ModelSerializer.restoreMultiLayerNetwork(new File("model.zip"));
+            //normalizer = NormalizerSerializer.getDefault().restore(new File("normalizer.txt"));
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 
 
     public void newRound() {
-        executor.shutdownNow();
-        executor = Executors.newFixedThreadPool(2, new DaemonThreadFactory());
+        Server.print("Starting new round.");
+        endRound = true;
+        while (movementTaskRunning);
+        endRound = false;
         roundNumber++;
+
 
         initPlayers();
         if (players.size() > 1) {
-            executor.submit(this::collision);
-            executor.submit(this::movementTask);
+            movementTaskExecutor.submit(this::movementTask);
         }
 
-//        for (Map.Entry<Player, PlayerMovementTask> entry : playersMovementTasks.entrySet()) {
-//            playersMovementExecutor.submit(entry.getValue());
-//        }
+        Server.print("Round " + roundNumber + " started.");
 
     }
 
     private void movementTask() {
-
-//        try {
-//            Thread.sleep(1500);
-//        }
-//        catch (Exception e) {
-//            e.printStackTrace();
-//        }
-
-        Server.print("Movement task activated.");
+        movementTaskRunning = true;
         Player player, player2;
         PlayerMovementTask movementTask;
         Iterator<Player> iterator;
-        while (activaPlayers.size() > 1 && !Thread.interrupted()) {
-            iterator = activaPlayers.iterator();
+        while (activePlayers.size() > 1 && !endRound) {
+            iterator = activePlayers.iterator();
             while (iterator.hasNext()) {
+                player = iterator.next();
                 try {
-                    player = iterator.next();
                     movementTask = playersMovementTasks.get(player);
                     if (player.isActive()) {
+                        for (int j = 0; j < activePlayers.size(); j++) {
+                            player2 = activePlayers.get(j);
+
+                            if (areColliding(player, player2)) {
+                                serveCollision(player, player2);
+                            }
+                        }
                         movementTask.run();
+
                     }
                     else {
                         iterator.remove();
@@ -80,33 +115,79 @@ public class Game {
             }
         }
 
-        Server.print("Movement task ended.");
-        if (!Thread.interrupted()) {
-            newRound();
+        if (!endRound) {
+            Server.print("Round " + roundNumber + " ended succesfully.");
+            endRound = false;
+            newRoundExecutor.submit(this::newRound);
         }
+        else {
+            Server.print("Round " + roundNumber + " ended by interruption.");
+        }
+
+        movementTaskRunning = false;
+
     }
 
+    private String getStateForBenchmarkPlayer(Player player) {
+        String s = "";
+        Player benchmarkPlayer = players.get(0);
+        Player p2;
+        PlayerMovementTask movementTask = playersMovementTasks.get(player);
 
-    private void collision() {
-        Server.print("Collision method activated.");
+        s += getPlayerString(benchmarkPlayer);
 
-        Player p1, p2;
-        while (!Thread.interrupted()) {
-            for (int i = 0; i < players.size() - 1; i++) {
-                for (int j = i+1; j < players.size(); j++) {
-                    p1 = players.get(i);
-                    p2 = players.get(j);
-
-                    if (areColliding(p1, p2)) {
-                        Server.print("Serving collision.");
-                        serveCollision(p1, p2);
-                        Server.print("Collision served.");
-                    }
-                }
+        for (int i = 0; i < players.size(); i++) {
+            p2 = players.get(i);
+            if (p2 != benchmarkPlayer) {
+                s += getPlayerString(p2);
             }
         }
 
-        Server.print("Collision method ended.");
+        if (movementTask.isUpPressed()) {
+            if (movementTask.isLeftPressed()) { s += "4"; }
+            else if (movementTask.isRightPressed()) { s += "5"; }
+            else { s += "0"; }
+        }
+        else if (movementTask.isDownPressed()) {
+            if (movementTask.isLeftPressed()) { s += "6"; }
+            else if (movementTask.isRightPressed()) { s += "7"; }
+            else { s += "2"; }
+        }
+        else if (movementTask.isLeftPressed()) { s += "1"; }
+        else if (movementTask.isRightPressed()) { s += "3"; }
+        else { s += "8"; }
+
+        return s;
+    }
+
+    private long lastTime;
+    private long currTime;
+
+    private void writeStateToFile() {
+        currTime = System.nanoTime();
+        if (lastTime < currTime - 100000000) {
+
+            String s = getStateForBenchmarkPlayer(players.get(0));
+
+            try {
+                Files.write(Paths.get("test_data.csv"), Arrays.asList(s), StandardOpenOption.APPEND);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+
+            lastTime = currTime;
+        }
+    }
+
+    private String getPlayerString(Player p2) {
+        String s = "";
+        s += p2.getCoords().getX() + ",";
+        s += p2.getCoords().getY() + ",";
+        s += p2.getRotation() + ",";
+        s += p2.getSpeedXY().getX() + ",";
+        s += p2.getSpeedXY().getY() + ",";
+        s += (p2.isActive() ? "1" : "0") + ",";
+        return s;
     }
 
     public synchronized void serveCollision(Player p1, Player p2) {
@@ -130,8 +211,6 @@ public class Game {
         Vector u12 = Vector.getRotatedVector(v1, b1);
         u12.scale(Math.sin(a1));
 
-
-
         v3.rotate(Math.PI);
 
         double b2 = Vector.getAngle(v2, v3);
@@ -151,26 +230,22 @@ public class Game {
 
         playersMovementTasks.get(p1).setActive(true);
         playersMovementTasks.get(p2).setActive(true);
-        playersMovementTasks.get(p1).setControllable(true);
-        playersMovementTasks.get(p2).setControllable(true);
-
         int j = 0;
         while (areColliding(p1, p2)) {
             j++;
             playersMovementTasks.get(p1).run();
             playersMovementTasks.get(p2).run();
-            Server.print("elomelo");
-            if (j > 10) {
-                //v3.scale(10);
+            if (j > 50) {
                 p1.setSpeedXY(new Vector(v3));
                 v3.rotate(Math.PI);
                 p2.setSpeedXY(new Vector(v3));
+                v3.rotate(Math.PI);
                 j = 0;
             }
         }
 
-
-
+        playersMovementTasks.get(p1).setControllable(true);
+        playersMovementTasks.get(p2).setControllable(true);
     }
 
     public boolean areColliding(Player p1, Player p2) {
@@ -178,53 +253,51 @@ public class Game {
             return false;
         }
 
-        double p1x, p1y, p2x, p2y, x, y;
-        p1x = p1.getCoords().getX();
-        p1y = p1.getCoords().getY();
-        p2x = p2.getCoords().getX();
-        p2y = p2.getCoords().getY();
-        x = p1x - p2x;
-        y = p1y - p2y;
+        double x, y;
+        x = p1.getCoords().getX() - p2.getCoords().getX();
+        y = p1.getCoords().getY() - p2.getCoords().getY();
 
-        if (x*x + y*y <= COLLISION_TRESHOLD) {
-            //UWAGAAA
-            //Jak odkomentujecie printa to kolizja zaczyna coś działać XDDDDDD
-
-            //Server.print((x*x + y*y) + " < " + COLLISION_TRESHOLD);//(x*x + y*y + "  " +  4*(Game.PLAYER_RADIUS*Game.PLAYER_RADIUS));
-            //Server.print(p1);
-            //Server.print(p2);
-            return true;
-        }
-        else {
-            return false;
-        }
-
+        return x*x + y*y <= COLLISION_TRESHOLD;
     }
 
     private void initPlayers() {
-        activaPlayers.clear();
+        activePlayers.clear();
+        activePlayers = new ArrayList<>(MAX_PLAYERS_NUMBER);
         double delta_t = 360.0/players.size();
         double rad;
         double initRadius = BOARD_RADIUS - PLAYER_RADIUS - BOARD_RADIUS/2;
         double x, y;
         Player player;
+        try {
+            Thread.sleep(10);
+        }
+        catch (Exception e) {
+
+        }
         for (int i = 0; i < players.size(); i++) {
             rad = Math.toRadians(0+delta_t*i);
             x = initRadius*Math.sin(rad);
             y = initRadius*Math.cos(rad);
             player = players.get(i);
             player.setCoords(x, y);
-            player.setRotation(Math.atan2(y,x) - Math.atan2(0,initRadius));
+            player.getSpeedXY().setLocation(0, 0);
+            player.setRotation(Math.atan2(y,x) - Math.atan2(0, initRadius));
             player.setColor(COLORS[i]);
             player.setActive(true);
-            activaPlayers.add(player);
+            playersMovementTasks.get(player).prepare();
+            activePlayers.add(player);
         }
+        Server.print("Players initialized.");
     }
 
     public void addPlayer(Player player) {
         player.setColor(COLORS[players.size()]);
         players.add(player);
-        playersMovementTasks.put(player, new PlayerMovementTask(player, this));
+        PlayerMovementTask task = new PlayerMovementTask(player, this);
+        playersMovementTasks.put(player, task);
+
+        dataSetGenerator.setBenchmarkPlayer(player, task);
+
         newRound();
     }
 
@@ -236,15 +309,91 @@ public class Game {
         return playersMovementTasks;
     }
 
-    public void setPlayers(List<Player> players) {
-        this.players = players;
+    public void addBot() {
+        Player bot = new Player();
+        bot.setBot(true);
+        PlayerMovementTask movementTask = new PlayerMovementTask(bot, this);
+        bot.setColor(COLORS[players.size()]);
+        players.add(bot);
+        playersMovementTasks.put(bot, movementTask);
+        botMovementExecutor.submit(() -> {
+            Random rand = new Random();
+            while (!Thread.interrupted()) {
+//                if (players.size() == 3 && model != null && false) {
+//                    String[] strArray = getStateForBenchmarkPlayer(bot).split(",");
+//                    double[] doubleArray = new double[strArray.length];
+//                    for(int i = 0; i < strArray.length; i++) {
+//                        doubleArray[i] = Double.parseDouble(strArray[i]);
+//                    }
+//                    INDArray in = new NDArray();
+//                    normalizer.transform(in);
+//                    INDArray out = model.output(in);
+//                    int idx = maxIndex(out);
+//                    movementTask.setUpPressed(false);
+//                    movementTask.setDownPressed(false);
+//                    movementTask.setLeftPressed(false);
+//                    movementTask.setRightPressed(false);
+//                    switch (idx) {
+//                        case 0:
+//                            movementTask.setUpPressed(true);
+//                            break;
+//                        case 1:
+//                            movementTask.setLeftPressed(true);
+//                            break;
+//                        case 2:
+//                            movementTask.setDownPressed(true);
+//                            break;
+//                        case 3:
+//                            movementTask.setRightPressed(true);
+//                            break;
+//                        case 4:
+//                            movementTask.setUpPressed(true);
+//                            movementTask.setLeftPressed(true);
+//                            break;
+//                        case 5:
+//                            movementTask.setUpPressed(true);
+//                            movementTask.setRightPressed(true);
+//                            break;
+//                        case 6:
+//                            movementTask.setDownPressed(true);
+//                            movementTask.setLeftPressed(true);
+//                            break;
+//                        case 7:
+//                            movementTask.setDownPressed(true);
+//                            movementTask.setRightPressed(true);
+//                            break;
+//                        case 8:
+//                            break;
+//                    }
+//                }
+//                else {
+                    movementTask.setUpPressed(rand.nextBoolean());
+                    movementTask.setDownPressed(rand.nextBoolean());
+                    movementTask.setLeftPressed(rand.nextBoolean());
+                    movementTask.setRightPressed(rand.nextBoolean());
+//                }
+
+                try {
+                    Thread.sleep(400);
+                }
+                catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        });
+        Server.print("Bot initialized.");
+
+        newRound();
     }
 
-    public List<Player> getActivaPlayers() {
-        return activaPlayers;
-    }
-
-    public void setActivaPlayers(List<Player> activaPlayers) {
-        this.activaPlayers = activaPlayers;
+    public static int maxIndex(INDArray vals){
+        int maxIndex = 0;
+        for (int i = 1; i < vals.length(); i++){
+            double newnumber = vals.getDouble(i);
+            if ((newnumber > vals.getDouble(maxIndex))){
+                maxIndex = i;
+            }
+        }
+        return maxIndex;
     }
 }

@@ -7,12 +7,21 @@ public class Player implements Serializable {
     private static final long serialVersionUID = -4123126425075180848L;
     private Point coords = new Point();
     private double rotation = 0.0;
-    private double speed = 0.0;
     private boolean active = true;
     private int points = 0;
+    private boolean bot = false;
 
     private Vector speedXY = new Vector(0.0, 0.0);
     private String color = "#000000";
+
+    public void setAll(Player player) {
+        this.coords.setLocation(player.getCoords().getX(), player.getCoords().getY());
+        this.rotation = player.rotation;
+        this.speedXY = player.speedXY;
+        this.active = player.active;
+        this.points = player.points;
+        this.bot = player.bot;
+    }
 
     public String getColor() {
         return color;
@@ -38,14 +47,6 @@ public class Player implements Serializable {
         this.rotation = rotation % 360;
     }
 
-    public double getSpeed() {
-        return speed;
-    }
-
-    public void setSpeed(double speed) {
-        this.speed = speed;
-    }
-
     public Vector getSpeedXY() {
         return speedXY;
     }
@@ -56,7 +57,7 @@ public class Player implements Serializable {
 
     @Override
     public String toString() {
-        return this.coords + " " + this.rotation + " " + color + this.speedXY.value();
+        return this.coords + " " + this.rotation + " " + color + " " + this.speedXY.value();
     }
 
     @Override
@@ -96,5 +97,13 @@ public class Player implements Serializable {
 
     public void setPoints(int points) {
         this.points = points;
+    }
+
+    public boolean isBot() {
+        return bot;
+    }
+
+    public void setBot(boolean bot) {
+        this.bot = bot;
     }
 }
