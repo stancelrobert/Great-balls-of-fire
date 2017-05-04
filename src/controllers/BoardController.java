@@ -42,38 +42,20 @@ public class BoardController {
 
     public void addPlayer(Player player) {
         players.add(player);
-        PlayerDisplayTask playerDisplayTask = new PlayerDisplayTask(player);
+        PlayerDisplayTask playerDisplayTask = new PlayerDisplayTask(player, boardPane);
         displayTasks.add(playerDisplayTask);
-
-        Platform.runLater(() -> {
-            this.boardPane.getChildren().add(playerDisplayTask.getCircle());
-            this.boardPane.getChildren().add(playerDisplayTask.getDirectionLine());
-        });
     }
 
     public synchronized void displayTask() {
         FPSManager fpsManager = new FPSManager(57.0);
-        Player player;
         PlayerDisplayTask displayTask;
         fpsManager.start();
         while (!Thread.interrupted()) {
             for (int i = 0; i < players.size(); i++) {
                 try {
-                    player = players.get(i);
                     displayTask = displayTasks.get(i);
 
-                    if (player.isActive()) {
-                        displayTask.setActive(true);
-                        displayTask.setpX(player.getCoords().getX()+293);
-                        displayTask.setpY(player.getCoords().getY()+310);
-
-                        displayTask.seteX(player.getCoords().getX()+293+displayTask.getCircle().getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
-                        displayTask.seteY(player.getCoords().getY()+310+displayTask.getCircle().getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
-                        displayTask.setPlayerPoints(player.getPoints());
-                    }
-                    else {
-                        displayTask.setActive(false);
-                    }
+                    displayTask.run();
 
                 }
                 catch (IndexOutOfBoundsException e) {

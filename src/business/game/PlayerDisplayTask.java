@@ -9,6 +9,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableIntegerValue;
 import javafx.beans.value.ObservableValue;
 import javafx.concurrent.Task;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Circle;
 import javafx.scene.shape.Line;
@@ -16,11 +18,12 @@ import javafx.scene.shape.Line;
 /**
  * Created by Robert on 07.04.2017.
  */
-public class PlayerDisplayTask extends Task<Void> {
+public class PlayerDisplayTask implements Runnable {
     public static final double RADIUS = 25.0;
     private static final double FPS = 57.0;
-    private final FPSManager fpsManager = new FPSManager(FPS);
 
+
+    private Pane board;
     private Player player;
     private Circle circle = new Circle(RADIUS, Color.web("#FF0000"));
     private Line directionLine = new Line();
@@ -32,16 +35,16 @@ public class PlayerDisplayTask extends Task<Void> {
     private StringProperty playerName = new SimpleStringProperty();
     private IntegerProperty playerPoints = new SimpleIntegerProperty();
 
-    public Circle getCircle() {
-        return circle;
-    }
 
-    public Line getDirectionLine() {
-        return directionLine;
-    }
-
-    public PlayerDisplayTask(Player player) {
+    /**
+     * Constructor
+     *
+     * @param player player (or bot) to display
+     */
+    public PlayerDisplayTask(Player player, Pane board) {
         this.player = player;
+        this.board = board;
+
         playerName.set(player.getColor());
         playerPoints.set(player.getPoints());
 
@@ -50,37 +53,38 @@ public class PlayerDisplayTask extends Task<Void> {
         circle.setFill(Color.web(player.getColor()));
         circle.visibleProperty().bind(active);
 
-
-
-
         directionLine.startXProperty().bind(pX);
         directionLine.startYProperty().bind(pY);
 
         directionLine.endXProperty().bind(eX);
         directionLine.endYProperty().bind(eY);
         directionLine.visibleProperty().bind(active);
+
+        Platform.runLater(() -> {
+            board.getChildren().add(circle);
+            board.getChildren().add(directionLine);
+        });
     }
 
+
+
     @Override
-    protected Void call() {
-        try {
-            //fpsManager.start();
-            while (!Thread.interrupted()) {
+    public void run() {
 
-                pX.set(player.getCoords().getX()+293);
-                pY.set(player.getCoords().getY()+310);
+        if (player.isActive()) {
+            active.set(true);
+            pX.set(player.getCoords().getX()+293);
+            pY.set(player.getCoords().getY()+310);
 
-                eX.set(player.getCoords().getX()+293+circle.getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
-                eY.set(player.getCoords().getY()+310+circle.getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+            eX.set(player.getCoords().getX()+293+circle.getRadius()*Math.cos(player.getRotation()*Math.PI/180.0));
+            eY.set(player.getCoords().getY()+310+circle.getRadius()*Math.sin(player.getRotation()*Math.PI/180.0));
+            setPlayerPoints(player.getPoints());
 
-
-                //fpsManager.waitForNextFrame();
-            }
         }
-        catch (Exception e) {
-            e.printStackTrace();
+        else {
+            active.set(false);
+            setPlayerPoints(1);
         }
-        return null;
     }
 
     public void setpX(double pX) {
@@ -97,6 +101,14 @@ public class PlayerDisplayTask extends Task<Void> {
 
     public void seteY(double eY) {
         this.eY.set(eY);
+    }
+
+    public Circle getCircle() {
+        return circle;
+    }
+
+    public Line getDirectionLine() {
+        return directionLine;
     }
 
     public void setActive(boolean active) {
