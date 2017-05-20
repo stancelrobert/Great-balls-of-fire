@@ -13,6 +13,7 @@ import org.nd4j.linalg.cpu.nativecpu.NDArray;
 import org.nd4j.linalg.dataset.DataSet;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.serializer.NormalizerSerializer;
+import org.nd4j.linalg.factory.Nd4j;
 
 import java.io.File;
 import java.io.IOException;
@@ -54,11 +55,12 @@ public class Game {
     private DataNormalization normalizer = null;
     private boolean endRound = false;
     private boolean movementTaskRunning = false;
+    private boolean generateData = true;
 
     public Game() {
         try {
-            //model = ModelSerializer.restoreMultiLayerNetwork(new File("model.zip"));
-            //normalizer = NormalizerSerializer.getDefault().restore(new File("normalizer.txt"));
+            model = ModelSerializer.restoreMultiLayerNetwork(new File("model.zip"));
+            normalizer = NormalizerSerializer.getDefault().restore(new File("normalizer.txt"));
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -107,6 +109,10 @@ public class Game {
                     }
                     else {
                         iterator.remove();
+                    }
+
+                    if (activePlayers.size() == 3 && generateData) {
+                        writeStateToFile();
                     }
                 }
                 catch (Exception e) {
@@ -165,12 +171,12 @@ public class Game {
 
     private void writeStateToFile() {
         currTime = System.nanoTime();
-        if (lastTime < currTime - 100000000) {
+        if (lastTime < currTime - 10000000) {
 
             String s = getStateForBenchmarkPlayer(players.get(0));
 
             try {
-                Files.write(Paths.get("test_data.csv"), Arrays.asList(s), StandardOpenOption.APPEND);
+                Files.write(Paths.get("data.csv"), Arrays.asList(s), StandardOpenOption.APPEND);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -319,62 +325,62 @@ public class Game {
         botMovementExecutor.submit(() -> {
             Random rand = new Random();
             while (!Thread.interrupted()) {
-//                if (players.size() == 3 && model != null && false) {
-//                    String[] strArray = getStateForBenchmarkPlayer(bot).split(",");
-//                    double[] doubleArray = new double[strArray.length];
-//                    for(int i = 0; i < strArray.length; i++) {
-//                        doubleArray[i] = Double.parseDouble(strArray[i]);
-//                    }
-//                    INDArray in = new NDArray();
-//                    normalizer.transform(in);
-//                    INDArray out = model.output(in);
-//                    int idx = maxIndex(out);
-//                    movementTask.setUpPressed(false);
-//                    movementTask.setDownPressed(false);
-//                    movementTask.setLeftPressed(false);
-//                    movementTask.setRightPressed(false);
-//                    switch (idx) {
-//                        case 0:
-//                            movementTask.setUpPressed(true);
-//                            break;
-//                        case 1:
-//                            movementTask.setLeftPressed(true);
-//                            break;
-//                        case 2:
-//                            movementTask.setDownPressed(true);
-//                            break;
-//                        case 3:
-//                            movementTask.setRightPressed(true);
-//                            break;
-//                        case 4:
-//                            movementTask.setUpPressed(true);
-//                            movementTask.setLeftPressed(true);
-//                            break;
-//                        case 5:
-//                            movementTask.setUpPressed(true);
-//                            movementTask.setRightPressed(true);
-//                            break;
-//                        case 6:
-//                            movementTask.setDownPressed(true);
-//                            movementTask.setLeftPressed(true);
-//                            break;
-//                        case 7:
-//                            movementTask.setDownPressed(true);
-//                            movementTask.setRightPressed(true);
-//                            break;
-//                        case 8:
-//                            break;
-//                    }
-//                }
-//                else {
+                if (activePlayers.size() == 3 && model != null) {
+                    String[] strArray = getStateForBenchmarkPlayer(bot).split(",");
+                    double[] doubleArray = new double[strArray.length-1];
+                    for(int i = 0; i < strArray.length-1; i++) {
+                        doubleArray[i] = Double.parseDouble(strArray[i]);
+                    }
+                    INDArray in = Nd4j.create(doubleArray);
+                    normalizer.transform(in);
+                    INDArray out = model.output(in);
+                    int idx = maxIndex(out);
+                    movementTask.setUpPressed(false);
+                    movementTask.setDownPressed(false);
+                    movementTask.setLeftPressed(false);
+                    movementTask.setRightPressed(false);
+                    switch (idx) {
+                        case 0:
+                            movementTask.setUpPressed(true);
+                            break;
+                        case 1:
+                            movementTask.setLeftPressed(true);
+                            break;
+                        case 2:
+                            movementTask.setDownPressed(true);
+                            break;
+                        case 3:
+                            movementTask.setRightPressed(true);
+                            break;
+                        case 4:
+                            movementTask.setUpPressed(true);
+                            movementTask.setLeftPressed(true);
+                            break;
+                        case 5:
+                            movementTask.setUpPressed(true);
+                            movementTask.setRightPressed(true);
+                            break;
+                        case 6:
+                            movementTask.setDownPressed(true);
+                            movementTask.setLeftPressed(true);
+                            break;
+                        case 7:
+                            movementTask.setDownPressed(true);
+                            movementTask.setRightPressed(true);
+                            break;
+                        case 8:
+                            break;
+                    }
+                }
+                else {
                     movementTask.setUpPressed(rand.nextBoolean());
                     movementTask.setDownPressed(rand.nextBoolean());
                     movementTask.setLeftPressed(rand.nextBoolean());
                     movementTask.setRightPressed(rand.nextBoolean());
-//                }
+                }
 
                 try {
-                    Thread.sleep(400);
+                    Thread.sleep(200);
                 }
                 catch (Exception e) {
                     e.printStackTrace();

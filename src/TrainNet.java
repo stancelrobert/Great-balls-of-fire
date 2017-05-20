@@ -109,7 +109,7 @@ public class TrainNet {
         model.setListeners(new ScoreIterationListener(100));
 
         int numEpochs = 10;
-        for (int epoch = 0; epoch < 30; epoch++)
+        for (int epoch = 0; epoch < numEpochs; epoch++)
             model.fit(trainingData);
 
 
