@@ -52,15 +52,15 @@ public class Game {
     private int roundNumber = 0;
     private GameDataSetGenerator dataSetGenerator = new GameDataSetGenerator(players);
     private MultiLayerNetwork model = null;
-    private DataNormalization normalizer = null;
+    private MultiLayerNetwork model2 = null;
     private boolean endRound = false;
     private boolean movementTaskRunning = false;
-    private boolean generateData = true;
+    private boolean generateData = false;
 
     public Game() {
         try {
-            model = ModelSerializer.restoreMultiLayerNetwork(new File("model.zip"));
-            normalizer = NormalizerSerializer.getDefault().restore(new File("normalizer.txt"));
+            model = ModelSerializer.restoreMultiLayerNetwork(new File("model_20mb_2.zip"));
+            model2 = ModelSerializer.restoreMultiLayerNetwork(new File("model6.2.zip"));
         }
         catch (Exception e) {
             e.printStackTrace();
@@ -112,7 +112,7 @@ public class Game {
                     }
 
                     if (activePlayers.size() == 3 && generateData) {
-                        writeStateToFile();
+                        writeStateToFile(player);
                     }
                 }
                 catch (Exception e) {
@@ -136,14 +136,14 @@ public class Game {
 
     private String getStateForBenchmarkPlayer(Player player) {
         String s = "";
-        Player benchmarkPlayer = players.get(0);
+        Player benchmarkPlayer = player;
         Player p2;
         PlayerMovementTask movementTask = playersMovementTasks.get(player);
 
         s += getPlayerString(benchmarkPlayer);
 
-        for (int i = 0; i < players.size(); i++) {
-            p2 = players.get(i);
+        for (int i = 0; i < activePlayers.size(); i++) {
+            p2 = activePlayers.get(i);
             if (p2 != benchmarkPlayer) {
                 s += getPlayerString(p2);
             }
@@ -169,14 +169,14 @@ public class Game {
     private long lastTime;
     private long currTime;
 
-    private void writeStateToFile() {
+    private void writeStateToFile(Player player) {
         currTime = System.nanoTime();
-        if (lastTime < currTime - 10000000) {
+        if (lastTime < currTime - 3000000) {
 
-            String s = getStateForBenchmarkPlayer(players.get(0));
+            String s = getStateForBenchmarkPlayer(player);
 
             try {
-                Files.write(Paths.get("data.csv"), Arrays.asList(s), StandardOpenOption.APPEND);
+                Files.write(Paths.get("data6.2.csv"), Arrays.asList(s), StandardOpenOption.APPEND);
             } catch (IOException e) {
                 e.printStackTrace();
             }
@@ -287,7 +287,7 @@ public class Game {
             player = players.get(i);
             player.setCoords(x, y);
             player.getSpeedXY().setLocation(0, 0);
-            player.setRotation(Math.atan2(y,x) - Math.atan2(0, initRadius));
+            player.setRotation(180.0+(Math.atan2(y,x) - Math.atan2(0, initRadius))*180.0/Math.PI);
             player.setColor(COLORS[i]);
             player.setActive(true);
             playersMovementTasks.get(player).prepare();
@@ -326,66 +326,121 @@ public class Game {
             Random rand = new Random();
             while (!Thread.interrupted()) {
                 if (activePlayers.size() == 3 && model != null) {
+                    Server.print("melo 3 graczy");
                     String[] strArray = getStateForBenchmarkPlayer(bot).split(",");
                     double[] doubleArray = new double[strArray.length-1];
                     for(int i = 0; i < strArray.length-1; i++) {
                         doubleArray[i] = Double.parseDouble(strArray[i]);
                     }
                     INDArray in = Nd4j.create(doubleArray);
-                    normalizer.transform(in);
-                    INDArray out = model.output(in);
-                    int idx = maxIndex(out);
-                    movementTask.setUpPressed(false);
-                    movementTask.setDownPressed(false);
-                    movementTask.setLeftPressed(false);
-                    movementTask.setRightPressed(false);
-                    switch (idx) {
-                        case 0:
-                            movementTask.setUpPressed(true);
-                            break;
-                        case 1:
-                            movementTask.setLeftPressed(true);
-                            break;
-                        case 2:
-                            movementTask.setDownPressed(true);
-                            break;
-                        case 3:
-                            movementTask.setRightPressed(true);
-                            break;
-                        case 4:
-                            movementTask.setUpPressed(true);
-                            movementTask.setLeftPressed(true);
-                            break;
-                        case 5:
-                            movementTask.setUpPressed(true);
-                            movementTask.setRightPressed(true);
-                            break;
-                        case 6:
-                            movementTask.setDownPressed(true);
-                            movementTask.setLeftPressed(true);
-                            break;
-                        case 7:
-                            movementTask.setDownPressed(true);
-                            movementTask.setRightPressed(true);
-                            break;
-                        case 8:
-                            break;
+                    if (strArray.length == 19) {
+                        INDArray out = model.output(in);
+                        int idx = maxIndex(out);
+                        movementTask.setUpPressed(false);
+                        movementTask.setDownPressed(false);
+                        movementTask.setLeftPressed(false);
+                        movementTask.setRightPressed(false);
+                        switch (idx) {
+                            case 0:
+                                movementTask.setUpPressed(true);
+                                break;
+                            case 1:
+                                movementTask.setLeftPressed(true);
+                                break;
+                            case 2:
+                                movementTask.setDownPressed(true);
+                                break;
+                            case 3:
+                                movementTask.setRightPressed(true);
+                                break;
+                            case 4:
+                                movementTask.setUpPressed(true);
+                                movementTask.setLeftPressed(true);
+                                break;
+                            case 5:
+                                movementTask.setUpPressed(true);
+                                movementTask.setRightPressed(true);
+                                break;
+                            case 6:
+                                movementTask.setDownPressed(true);
+                                movementTask.setLeftPressed(true);
+                                break;
+                            case 7:
+                                movementTask.setDownPressed(true);
+                                movementTask.setRightPressed(true);
+                                break;
+                            case 8:
+                                break;
+                        }
+                    }
+                }
+                else if (activePlayers.size() == 2 && model2 != null) {
+                    Server.print("melo 2 graczy");
+                    String[] strArray = getStateForBenchmarkPlayer(bot).split(",");
+                    double[] doubleArray = new double[strArray.length-1];
+                    for(int i = 0; i < strArray.length-1; i++) {
+                        doubleArray[i] = Double.parseDouble(strArray[i]);
+                    }
+                    INDArray in = Nd4j.create(doubleArray);
+                    INDArray out;
+                    if (strArray.length == 13) {
+                        out = model2.output(in);
+                        int idx = maxIndex(out);
+                        movementTask.setUpPressed(false);
+                        movementTask.setDownPressed(false);
+                        movementTask.setLeftPressed(false);
+                        movementTask.setRightPressed(false);
+                        switch (idx) {
+                            case 0:
+                                movementTask.setUpPressed(true);
+                                break;
+                            case 1:
+                                movementTask.setLeftPressed(true);
+                                break;
+                            case 2:
+                                movementTask.setDownPressed(true);
+                                break;
+                            case 3:
+                                movementTask.setRightPressed(true);
+                                break;
+                            case 4:
+                                movementTask.setUpPressed(true);
+                                movementTask.setLeftPressed(true);
+                                break;
+                            case 5:
+                                movementTask.setUpPressed(true);
+                                movementTask.setRightPressed(true);
+                                break;
+                            case 6:
+                                movementTask.setDownPressed(true);
+                                movementTask.setLeftPressed(true);
+                                break;
+                            case 7:
+                                movementTask.setDownPressed(true);
+                                movementTask.setRightPressed(true);
+                                break;
+                            case 8:
+                                break;
+                        }
                     }
                 }
                 else {
+                    Server.print("melo 3 graczy: " + activePlayers.size());
                     movementTask.setUpPressed(rand.nextBoolean());
                     movementTask.setDownPressed(rand.nextBoolean());
                     movementTask.setLeftPressed(rand.nextBoolean());
                     movementTask.setRightPressed(rand.nextBoolean());
                 }
-
-                try {
-                    Thread.sleep(200);
-                }
-                catch (Exception e) {
-                    e.printStackTrace();
-                }
+//
+//                try {
+//                    Thread.sleep(20);
+//                }
+//                catch (Exception e) {
+//                    e.printStackTrace();
+//                }
             }
+
+            Server.print("LOLOSADSADSDDDDDDDDDDDDDDDDDDD WTF THREAD INTERRUPTED");
         });
         Server.print("Bot initialized.");
 
